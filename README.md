@@ -114,7 +114,7 @@ disasternet/
 ├── requirements.txt
 ├── db.sqlite3
 │
-├── disasternet/              # Project config
+├── core/              # Project config
 │   ├── settings.py
 │   ├── urls.py               # Root URL conf (includes reports.urls)
 │   └── wsgi.py
