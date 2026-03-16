@@ -1,0 +1,818 @@
+{% extends "base.html" %}
+
+{% block title %}Missing Persons{% endblock %}
+
+{% block extra_css %}
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+.page-header-left h2 {
+    font-family: var(--font-head);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.page-header-left p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+
+/* Search + filter */
+.toolbar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+.search-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    padding: 0.55rem 0.9rem 0.55rem 2.2rem;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+.search-wrap input:focus { border-color: rgba(232,59,59,0.5); box-shadow: 0 0 0 3px rgba(232,59,59,0.1); }
+.search-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+
+.filter-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.filter-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.filter-btn.active { color: var(--text); border-color: var(--accent); background: rgba(232,59,59,0.1); }
+.filter-btn.found.active   { border-color:#22c55e; background:rgba(34,197,94,0.1); color:#4ade80; }
+.filter-btn.deceased.active{ border-color:#6b7280; background:rgba(107,114,128,0.1); color:#9ca3af; }
+
+.filter-count { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
+
+/* Stats */
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* stats */
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+}
+.stat-num { font-family: var(--font-head); font-size: 1.8rem; font-weight: 700; }
+.stat-num.red    { color: #f87171; }
+.stat-num.green  { color: #4ade80; }
+.stat-num.blue   { color: #60a5fa; }
+.stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Grid */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Card */
+.person-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+    position: relative;
+}
+.person-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
+.person-card.status-Active   { border-top: 3px solid #e83b3b; }
+.person-card.status-Found    { border-top: 3px solid #22c55e; }
+.person-card.status-Deceased { border-top: 3px solid #6b7280; }
+
+/* Photo */
+.card-photo-wrap { position: relative; }
+.card-photo {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+}
+.card-photo-placeholder {
+    width: 100%;
+    height: 200px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.4rem;
+    color: var(--border);
+    font-size: 2.5rem;
+}
+.card-photo-placeholder span {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: var(--font-body);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Status overlay on photo */
+.status-overlay {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(4px);
+}
+.status-overlay.Active   { background: rgba(232,59,59,0.85); color: white; }
+.status-overlay.Found    { background: rgba(34,197,94,0.85);  color: white; }
+.status-overlay.Deceased { background: rgba(107,114,128,0.85); color: white; }
+
+/* Active pulse */
+.status-overlay.Active::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: white;
+    margin-right: 5px;
+    animation: pulse 1.5s infinite;
+    vertical-align: middle;
+}
+@keyframes pulse {
+    0%,100% { opacity:1; }
+    50% { opacity:0.3; }
+}
+
+.card-body { padding: 1rem 1.1rem; }
+
+.card-name {
+    font-family: var(--font-head);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.card-meta { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.75rem; }
+
+.card-detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+}
+.card-detail .di { flex-shrink: 0; width: 16px; text-align: center; }
+.card-detail span { color: var(--text); }
+
+.card-marks {
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.75rem;
+    line-height: 1.5;
+}
+.card-marks strong { color: var(--text); display: block; margin-bottom: 2px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; }
+
+.card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 1.1rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+}
+.card-time { font-size: 0.75rem; color: var(--muted); }
+
+/* ── Status update button on card ── */
+.status-update-btn {
+    font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.55rem;
+    border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer;
+    font-family: var(--font-body); transition: all 0.15s; white-space: nowrap;
+}
+.status-update-btn.status-Active   { color: #f87171; border-color: rgba(232,59,59,0.3); }
+.status-update-btn.status-Found    { color: #4ade80; border-color: rgba(34,197,94,0.3); }
+.status-update-btn.status-Deceased { color: #9ca3af; border-color: rgba(107,114,128,0.3); }
+.status-update-btn:hover { border-color: rgba(255,255,255,0.3); background: var(--surface2); }
+
+/* ── Status modal ── */
+.status-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    z-index: 2000; display: none; align-items: center; justify-content: center;
+}
+.status-modal-backdrop.open { display: flex; }
+.status-modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.5rem; width: 100%; max-width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6); margin: 1rem;
+}
+.status-modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+.status-modal-sub   { font-size: 0.78rem; color: var(--muted); margin-bottom: 1.25rem; }
+.status-options { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+.status-option {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.65rem 0.85rem; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface2);
+    cursor: pointer; transition: all 0.15s;
+}
+.status-option:hover { border-color: rgba(255,255,255,0.2); }
+.status-option.selected { border-color: var(--accent); background: rgba(232,59,59,0.08); }
+.status-option input[type=radio] { accent-color: var(--accent); }
+.status-option-label { font-size: 0.85rem; font-weight: 600; }
+.status-option-desc  { font-size: 0.72rem; color: var(--muted); }
+.status-modal-note {
+    width: 100%; box-sizing: border-box; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 0.55rem 0.8rem; font-size: 0.83rem;
+    font-family: var(--font-body); outline: none; resize: vertical;
+    min-height: 60px; margin-bottom: 1rem; transition: border-color 0.15s;
+}
+.status-modal-note:focus { border-color: var(--accent); }
+.status-modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; }
+.btn-cancel {
+    padding: 0.5rem 1rem; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--muted); font-size: 0.83rem;
+    cursor: pointer; font-family: var(--font-body); transition: all 0.15s;
+}
+.btn-cancel:hover { color: var(--text); }
+.btn-save {
+    padding: 0.5rem 1.2rem; border-radius: 7px; border: none;
+    background: var(--accent); color: #fff; font-size: 0.83rem;
+    font-weight: 700; cursor: pointer; font-family: var(--font-head);
+    transition: background 0.15s;
+}
+.btn-save:hover { background: #c0392b; }
+
+/* Appeal banner */
+.appeal-banner {
+    background: rgba(232,59,59,0.07);
+    border: 1px solid rgba(232,59,59,0.2);
+    border-radius: 10px;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.83rem;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.appeal-banner strong { color: var(--text); }
+
+/* Empty state */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-state h3 { font-family: var(--font-head); font-size: 1.2rem; color: var(--text); margin-bottom: 0.5rem; }
+
+/* ── DETAIL MODAL ── */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(5px);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+}
+.modal-backdrop.open {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.25s ease;
+    position: relative;
+}
+.modal-backdrop.open .modal-box {
+    transform: translateY(0) scale(1);
+}
+.modal-close {
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 10;
+    font-family: var(--font-body);
+}
+.modal-close:hover { color: var(--text); background: rgba(255,255,255,0.1); }
+
+/* Modal photo */
+.modal-photo {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 14px 14px 0 0;
+    display: block;
+}
+.modal-photo-placeholder {
+    width: 100%;
+    height: 180px;
+    background: var(--surface2);
+    border-radius: 14px 14px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    color: var(--border);
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.modal-photo-placeholder span {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: var(--font-body);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Status badge on modal */
+.modal-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+}
+.modal-status-badge {
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.modal-status-badge.Active   { background:rgba(232,59,59,0.15);  color:#f87171; border:1px solid rgba(232,59,59,0.3); }
+.modal-status-badge.Found    { background:rgba(34,197,94,0.15);  color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
+.modal-status-badge.Deceased { background:rgba(107,114,128,0.15);color:#9ca3af; border:1px solid rgba(107,114,128,0.3); }
+.modal-id { font-size:0.72rem; color:var(--muted); font-family:monospace; }
+
+/* Modal body */
+.modal-body { padding: 1.25rem; }
+.modal-name {
+    font-family: var(--font-head);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+.modal-meta { font-size: 0.82rem; color: var(--muted); margin-bottom: 1.25rem; }
+
+.modal-row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+}
+.modal-row:last-of-type { border-bottom: none; }
+.modal-row-icon { flex-shrink:0; width:20px; text-align:center; font-size:0.95rem; margin-top:1px; }
+.modal-row-label { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px; }
+.modal-row-value { color:var(--text); line-height:1.4; }
+
+.modal-marks {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size:0.82rem;
+    color:var(--muted);
+    line-height:1.5;
+    margin-top:0.75rem;
+    border-left: 3px solid rgba(232,59,59,0.4);
+}
+.modal-marks strong { color:var(--text); display:block; margin-bottom:4px; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.4px; }
+
+.modal-appeal {
+    background: rgba(232,59,59,0.06);
+    border: 1px solid rgba(232,59,59,0.2);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 1rem;
+    text-align: center;
+    line-height: 1.5;
+}
+.modal-appeal strong { color: var(--text); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+    .cards-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 700px) {
+    .stats-bar { grid-template-columns: repeat(2, 1fr) !important; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .page-header > div:last-child { width: 100%; display: flex; gap: 0.5rem; }
+    .page-header > div:last-child a { flex: 1; text-align: center; }
+    .filter-tabs { gap: 0.3rem; flex-wrap: wrap; }
+    .filter-tab { font-size: 0.75rem; padding: 0.3rem 0.65rem; }
+    .search-bar { flex-direction: column; }
+    .search-bar input { width: 100%; }
+}
+@media (max-width: 500px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: repeat(3, 1fr) !important; }
+    .card-photo, .card-photo-placeholder { height: 160px; }
+    .card-name { font-size: 1rem; }
+}
+
+{% endblock %}
+
+{% block content %}
+
+<!-- ── DETAIL MODAL ── -->
+<div class="modal-backdrop" id="person-modal" onclick="closeModalOutside(event)">
+    <div class="modal-box" id="modal-box">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div id="modal-content"></div>
+    </div>
+</div>
+<div class="page-header">
+    <div class="page-header-left">
+        <h2><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i> Missing Persons</h2>
+        <p>All missing person reports — help identify and locate them.</p>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+        <a href="{% url 'view_injured' %}" class="btn btn-outline"><i class="bi bi-bandaid-fill" style="color:#fb923c;font-size:1.1rem;"></i> View Injured</a>
+        <a href="{% url 'report_missing' %}" class="btn btn-outline">+ Report Missing</a>
+    </div>
+</div>
+
+{% if persons %}
+<!-- Appeal -->
+<div class="appeal-banner">
+    <i class="bi bi-pencil-fill" style="color:#fbbf24;font-size:1.1rem;"></i> <span>If you have information about any missing person listed here, call <strong>100 (Police)</strong> immediately. Every lead matters.</span>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+    <div class="stat-box">
+        <div class="stat-num red">{{ count_active }}</div>
+        <div class="stat-label">Active Search</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-num green">{{ count_found }}</div>
+        <div class="stat-label">Found Safe</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-num blue">{{ persons|length }}</div>
+        <div class="stat-label">Total Reports</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <div class="search-wrap">
+        <span class="search-icon"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i></span>
+        <input type="text" id="search-input" placeholder="Search by name or location…" oninput="applyFilters()">
+    </div>
+    <button class="filter-btn active"    onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn"           onclick="setFilter('Active', this)"> Active</button>
+    <button class="filter-btn found"     onclick="setFilter('Found', this)"> Found</button>
+    <button class="filter-btn deceased"  onclick="setFilter('Deceased', this)"> Deceased</button>
+    <span class="filter-count" id="filter-count">{{ persons|length }} records</span>
+</div>
+
+<!-- Cards -->
+<div class="cards-grid" id="cards-grid">
+    {% for p in persons %}
+    <div class="person-card status-{{ p.status }}"
+         data-status="{{ p.status }}"
+         data-name="{{ p.name|lower }}"
+         data-location="{{ p.last_seen_location|lower }}"
+         onclick="openMissingModal(this)"
+         style="cursor:pointer;"
+         data-pk="{{ p.pk }}"
+         data-fullname="{{ p.name }}"
+         data-age="{{ p.age }}"
+         data-gender="{{ p.gender }}"
+         data-location-full="{{ p.last_seen_location }}"
+         data-marks="{{ p.body_marks|default:''|escapejs }}"
+         data-reported="{{ p.reported_at|date:'d M Y, H:i' }}"
+         data-status-changed="{% if p.status_changed_at %}{{ p.status_changed_at|date:'d M Y, H:i' }}{% endif %}"
+         data-status-note="{{ p.status_note|default:''|escapejs }}"
+         data-photo="{% if p.photo %}{{ p.photo.url }}{% endif %}">
+
+        <div class="card-photo-wrap">
+            {% if p.photo %}
+                <img class="card-photo" src="{{ p.photo.url }}" alt="{{ p.name }}">
+            {% else %}
+                <div class="card-photo-placeholder">
+                    {% if p.gender == 'Male' %}<i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i>{% elif p.gender == 'Female' %}<i class="bi bi-person-fill" style="color:#f9a8d4;font-size:1.1rem;"></i>{% else %}<i class="bi bi-person-fill" style="color:#94a3b8;font-size:1.1rem;"></i>{% endif %}
+                    <span>No photo</span>
+                </div>
+            {% endif %}
+            <span class="status-overlay {{ p.status }}">{{ p.status }}</span>
+        </div>
+
+        <div class="card-body">
+            <div class="card-name">{{ p.name }}</div>
+            <div class="card-meta">{{ p.age }} yrs · {{ p.gender }}</div>
+
+            <div class="card-detail">
+                <span class="di"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i></span>
+                <span>{{ p.last_seen_location }}</span>
+            </div>
+
+            <div class="card-detail">
+                <span class="di"><i class="bi bi-clock-history" style="color:#94a3b8;font-size:1.1rem;"></i></span>
+                <span>Reported {{ p.reported_at|timesince }} ago</span>
+            </div>
+
+            {% if p.status_changed_at %}
+            <div class="card-detail">
+                <span class="di"><i class="bi bi-funnel-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>
+                <span style="color:
+                    {% if p.status == 'Found' %}#4ade80
+                    {% elif p.status == 'Deceased' %}#9ca3af
+                    {% else %}var(--muted){% endif %};">
+                    {{ p.status }} on {{ p.status_changed_at|date:"d M Y" }}
+                </span>
+            </div>
+            {% endif %}
+
+            {% if p.body_marks %}
+            <div class="card-marks">
+                <strong>Identification</strong>
+                {{ p.body_marks|truncatechars:100 }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer">
+            <span class="card-time">{{ p.reported_at|date:"d M Y, H:i" }}</span>
+            {% if user.is_authenticated %}
+            <button class="status-update-btn status-{{ p.status }}"
+                    onclick="event.stopPropagation(); openStatusModal('missing', {{ p.pk }}, '{{ p.name|escapejs }}', '{{ p.status }}')"
+                    title="Update status">
+                {% if p.status == 'Active' %}<i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> Active
+                {% elif p.status == 'Found' %}<i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Found
+                {% else %}— Deceased{% endif %}
+            </button>
+            {% else %}
+            {% if p.status == 'Active' %}<span style="font-size:0.72rem;color:#f87171;">SEARCHING</span>
+            {% elif p.status == 'Found' %}<span style="font-size:0.72rem;color:#4ade80;"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> FOUND SAFE</span>
+            {% elif p.status == 'Deceased' %}<span style="font-size:0.72rem;color:#9ca3af;">— DECEASED</span>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i></div>
+        <h3>No missing persons reported</h3>
+        <p>No missing person reports have been filed for this disaster.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% include "pagination.html" with page_obj=page_obj %}
+
+<!-- Status Update Modal -->
+<div class="status-modal-backdrop" id="status-modal-backdrop" onclick="closeStatusModal(event)">
+    <div class="status-modal" onclick="event.stopPropagation()">
+        <div class="status-modal-title" id="smodal-title">Update Status</div>
+        <div class="status-modal-sub" id="smodal-sub">Select new status for this person</div>
+        <form method="post" id="status-update-form">
+            {% csrf_token %}
+            <div class="status-options">
+                <label class="status-option" id="opt-Active">
+                    <input type="radio" name="status" value="Active">
+                    <div>
+                        <div class="status-option-label" style="color:#f87171;"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> Active</div>
+                        <div class="status-option-desc">Still missing, search ongoing</div>
+                    </div>
+                </label>
+                <label class="status-option" id="opt-Found">
+                    <input type="radio" name="status" value="Found">
+                    <div>
+                        <div class="status-option-label" style="color:#4ade80;"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Found</div>
+                        <div class="status-option-desc">Person has been located safely</div>
+                    </div>
+                </label>
+                <label class="status-option" id="opt-Deceased">
+                    <input type="radio" name="status" value="Deceased">
+                    <div>
+                        <div class="status-option-label" style="color:#9ca3af;"><i class="bi bi-people-fill" style="color:#94a3b8;font-size:1.1rem;"></i> Deceased</div>
+                        <div class="status-option-desc">Person was found deceased</div>
+                    </div>
+                </label>
+            </div>
+            <textarea class="status-modal-note" name="status_note" placeholder="Optional note (e.g. found at Cuttack hospital, confirmed by family)…"></textarea>
+            <div class="status-modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeStatusModal()">Cancel</button>
+                <button type="submit" class="btn-save">Save Status</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+function openMissingModal(card) {
+    const name     = card.dataset.fullname;
+    const age      = card.dataset.age;
+    const gender   = card.dataset.gender;
+    const location = card.dataset.locationFull;
+    const marks    = card.dataset.marks;
+    const reported = card.dataset.reported;
+    const photo    = card.dataset.photo;
+    const status   = card.dataset.status;
+    const pk       = card.dataset.pk;
+
+    const genderIcon = gender === 'Male' ? '♂' : gender === 'Female' ? '♀' : '○';
+
+    let photoHTML = photo
+        ? `<img class="modal-photo" src="${photo}" alt="${name}">`
+        : `<div class="modal-photo-placeholder">${genderIcon}<span>No Photo</span></div>`;
+
+    let statusDot = status === 'Active' ? '●' : status === 'Found' ? '●' : '●';
+
+    document.getElementById('modal-content').innerHTML = `
+        ${photoHTML}
+        <div class="modal-status-bar">
+            <span class="modal-status-badge ${status}">${statusDot} ${status}</span>
+            <span class="modal-id">#${String(pk).padStart(5,'0')}</span>
+        </div>
+        <div class="modal-body">
+            <div class="modal-name">${name}</div>
+            <div class="modal-meta">${age} years old &nbsp;·&nbsp; ${gender}</div>
+
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Last Seen Location</div><div class="modal-row-value">${location}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-clock-history" style="color:#94a3b8;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Reported On</div><div class="modal-row-value">${reported}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-bar-chart-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Status</div><div class="modal-row-value">${status}</div></div>
+            </div>
+
+            ${marks ? `<div class="modal-marks"><strong>Identification Marks</strong>${marks}</div>` : ''}
+
+            <div class="modal-appeal">
+                If you have seen <strong>${name}</strong>, please call <strong>100 (Police)</strong> immediately.
+            </div>
+        </div>
+    `;
+
+    document.getElementById('person-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('person-modal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+    if (e.target.id === 'person-modal') closeModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+let currentFilter = 'all';
+
+function setFilter(status, btn) {
+    currentFilter = status;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+}
+
+function applyFilters() {
+    const query  = document.getElementById('search-input').value.toLowerCase().trim();
+    const cards  = document.querySelectorAll('.person-card');
+    let visible  = 0;
+
+    cards.forEach(card => {
+        const matchStatus   = currentFilter === 'all' || card.dataset.status === currentFilter;
+        const matchSearch   = !query ||
+            (card.dataset.name || '').includes(query) ||
+            (card.dataset.location || '').includes(query);
+
+        if (matchStatus && matchSearch) {
+            card.style.display = '';
+            visible++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    document.getElementById('filter-count').textContent =
+        visible + ' record' + (visible !== 1 ? 's' : '');
+}
+
+// ── Status Update Modal ──
+function openStatusModal(type, pk, name, currentStatus) {
+    document.getElementById('smodal-title').textContent = 'Update: ' + name;
+    document.getElementById('smodal-sub').textContent   = 'Current status: ' + currentStatus;
+
+    // Set form action
+    const form = document.getElementById('status-update-form');
+    form.action = '/' + type + '/' + pk + '/update-status/';
+
+    // Pre-select current status radio + highlight
+    document.querySelectorAll('.status-option').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.status-option input[type=radio]').forEach(r => {
+        r.checked = (r.value === currentStatus);
+        if (r.checked) r.closest('.status-option').classList.add('selected');
+    });
+
+    // Clear note
+    document.querySelector('.status-modal-note').value = '';
+
+    document.getElementById('status-modal-backdrop').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeStatusModal(e) {
+    if (e && e.target !== document.getElementById('status-modal-backdrop')) return;
+    document.getElementById('status-modal-backdrop').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// Highlight option on radio change
+document.querySelectorAll('.status-option input[type=radio]').forEach(r => {
+    r.addEventListener('change', function() {
+        document.querySelectorAll('.status-option').forEach(el => el.classList.remove('selected'));
+        this.closest('.status-option').classList.add('selected');
+    });
+});
+
+// ESC to close
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeStatusModal({ target: document.getElementById('status-modal-backdrop') });
+});
+</script>
+{% endblock %}

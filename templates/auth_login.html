@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
+
+{% block extra_css %}
+.auth-page {
+    min-height: calc(100vh - 140px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+.auth-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 860px;
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+}
+.auth-side,
+.auth-form-side {
+    border-radius: 0;
+}
+.auth-side {
+    border-radius: 16px 0 0 16px;
+}
+.auth-form-side {
+    border-radius: 0 16px 16px 0;
+}
+@media (max-width: 640px) {
+    .auth-layout { grid-template-columns: 1fr; }
+    .auth-side   { display: none; }
+    .auth-form-side { border-radius: 16px; }
+}
+
+/* Left side — branding panel */
+.auth-side {
+    background: linear-gradient(160deg, #1a0505 0%, #2d0808 40%, #0d1117 100%);
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    border-radius: 16px 0 0 16px;
+}
+.auth-side::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(232,59,59,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+}
+.auth-side-brand {
+    font-family: var(--font-head);
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+.auth-side-brand span { color: var(--accent); }
+.auth-side-tagline {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.45);
+    margin-top: 0.3rem;
+}
+.auth-side-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    margin: 2rem 0;
+}
+.auth-side-feat {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.6);
+}
+.auth-side-feat-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(232,59,59,0.12);
+    border: 1px solid rgba(232,59,59,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.auth-side-note {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.3);
+    line-height: 1.5;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 1rem;
+}
+
+/* Right side — form */
+.auth-form-side {
+    background: var(--surface);
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.auth-form-title {
+    font-family: var(--font-head);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+.auth-form-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 1.75rem; }
+
+.auth-field { margin-bottom: 1rem; }
+.auth-field label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+}
+.auth-field input {
+    width: 100%; box-sizing: border-box;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 0.6rem 0.85rem;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: var(--font-body);
+}
+.auth-field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,59,59,0.1);
+}
+.auth-submit {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.92rem;
+    font-weight: 700;
+    padding: 0.7rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: var(--font-head);
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+}
+.auth-submit:hover  { background: #c0392b; }
+.auth-submit:active { transform: scale(0.99); }
+.auth-divider {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin: 1.1rem 0;
+}
+.auth-divider hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+.auth-divider span { font-size: 0.7rem; color: var(--muted); white-space: nowrap; }
+.auth-footer-link {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+.auth-footer-link a { color: var(--accent); text-decoration: none; }
+.auth-footer-link a:hover { text-decoration: underline; }
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-layout">
+
+        <!-- Left branding side -->
+        <div class="auth-side">
+            <div>
+                <div class="auth-side-brand">DISASTER<span>NET</span></div>
+                <div class="auth-side-tagline">Crowd-Source Disaster Management</div>
+            </div>
+            <div class="auth-side-features">
+                <div class="auth-side-feat">
+                    <div class="auth-side-feat-icon"><i class="bi bi-map-fill" style="color:#38bdf8;font-size:1.1rem;"></i></div>
+                    Real-time disaster heatmap across India
+                </div>
+                <div class="auth-side-feat">
+                    <div class="auth-side-feat-icon"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i></div>
+                    Report missing & injured persons
+                </div>
+                <div class="auth-side-feat">
+                    <div class="auth-side-feat-icon"><i class="bi bi-chat-left-text-fill" style="color:#a78bfa;font-size:1.1rem;"></i></div>
+                    Community updates & verified reports
+                </div>
+                <div class="auth-side-feat">
+                    <div class="auth-side-feat-icon"><i class="bi bi-phone-fill" style="color:#60a5fa;font-size:1.1rem;"></i></div>
+                    Works offline — install as an app
+                </div>
+            </div>
+            <div class="auth-side-note">
+                <i class="bi bi-lock-fill" style="color:#94a3b8;font-size:1.1rem;"></i> Viewing reports and posting disaster updates doesn't require a login.<br>
+                Login is only needed to report missing or injured persons.
+            </div>
+        </div>
+
+        <!-- Right form side -->
+        <div class="auth-form-side">
+            <div class="auth-form-title">Welcome back</div>
+            <div class="auth-form-sub">Sign in to your DisasterNet account</div>
+
+            <form method="post" action="{% url 'auth_login' %}" id="login-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+                <div class="auth-field">
+                    <label>Username</label>
+                    <input type="text" name="username" placeholder="Your username" autocomplete="username" autofocus>
+                </div>
+                <div class="auth-field">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="Your password" autocomplete="current-password">
+                </div>
+                <button type="submit" class="auth-submit">Sign In →</button>
+            </form>
+
+            <div class="auth-divider"><hr><span>new here?</span><hr></div>
+            <div class="auth-footer-link">
+                <a href="{% url 'auth_register' %}{% if next %}?next={{ next }}{% endif %}">Create a free account →</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('login-form').submit();
+});
+</script>
+{% endblock %}

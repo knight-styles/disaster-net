@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Feedback & Report Issue{% endblock %}
+
+{% block extra_css %}
+.feedback-wrap { max-width:560px; margin:2rem auto; }
+.fb-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.fb-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2); }
+.fb-title { font-family:var(--font-head); font-size:1.35rem; font-weight:700; display:flex; align-items:center; gap:0.5rem; }
+.fb-sub { font-size:0.8rem; color:var(--muted); margin-top:0.2rem; }
+.fb-body { padding:1.4rem 1.5rem; }
+.fb-field { margin-bottom:1rem; }
+.fb-field label { display:block; font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:0.35rem; font-weight:600; }
+.fb-field select,
+.fb-field input,
+.fb-field textarea {
+    width:100%; box-sizing:border-box;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:8px; color:var(--text);
+    padding:0.55rem 0.8rem; font-size:0.85rem;
+    outline:none; transition:border-color 0.15s; font-family:var(--font-body);
+}
+.fb-field select:focus,
+.fb-field input:focus,
+.fb-field textarea:focus { border-color:var(--accent); }
+.fb-field textarea { min-height:110px; resize:vertical; line-height:1.5; }
+.fb-row { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
+@media(max-width:480px){.fb-row{grid-template-columns:1fr;}}
+.fb-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; }
+@media(max-width:400px){.fb-type-grid{grid-template-columns:1fr;}}
+.fb-type-btn {
+    padding:0.5rem 0.6rem; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface2); color:var(--muted); font-size:0.8rem;
+    cursor:pointer; text-align:center; transition:all 0.15s;
+    display:flex; align-items:center; gap:0.4rem;
+}
+.fb-type-btn:hover { border-color:rgba(255,255,255,0.2); color:var(--text); }
+.fb-type-btn.selected { border-color:var(--accent); background:rgba(232,59,59,0.08); color:var(--text); }
+.fb-submit {
+    width:100%; background:var(--accent); border:none; border-radius:8px;
+    color:#fff; font-size:0.9rem; font-weight:700; padding:0.65rem;
+    cursor:pointer; transition:background 0.15s; font-family:var(--font-head); letter-spacing:0.4px;
+}
+.fb-submit:hover { background:#c0392b; }
+.fb-success {
+    text-align:center; padding:2.5rem 1.5rem;
+}
+.fb-success-icon { font-size:2.5rem; margin-bottom:0.75rem; }
+.fb-success-title { font-family:var(--font-head); font-size:1.4rem; margin-bottom:0.4rem; }
+.fb-success-sub { font-size:0.85rem; color:var(--muted); }
+{% endblock %}
+
+{% block content %}
+<div class="feedback-wrap">
+
+    {% if messages %}
+    {% for msg in messages %}
+        {% if 'success' in msg.tags %}
+        <div class="fb-card" style="margin-bottom:0;">
+            <div class="fb-success">
+                <div class="fb-success-icon"><i class="bi bi-x-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i></div>
+                <div class="fb-success-title">Feedback Received</div>
+                <div class="fb-success-sub">{{ msg }}<br><br>
+                    <a href="{% url 'home' %}" style="color:var(--accent);">← Back to Home</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+    {% else %}
+
+    <a href="{{ next|default:'/' }}" class="back-link" style="display:inline-flex;align-items:center;gap:0.4rem;font-size:0.83rem;color:var(--muted);text-decoration:none;margin-bottom:1rem;">← Back</a>
+
+    <div class="fb-card">
+        <div class="fb-header">
+            <div class="fb-title"><i class="bi bi-chat-left-text-fill" style="color:#a78bfa;font-size:1.1rem;"></i> Feedback &amp; Report Issue</div>
+            <div class="fb-sub">Report inaccurate info, spam, outdated reports, or share general feedback.</div>
+        </div>
+        <div class="fb-body">
+            <form method="post" action="{% url 'feedback' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next|default:'/' }}">
+                {% if prefill_id %}<input type="hidden" name="object_id" value="{{ prefill_id }}">{% endif %}
+
+                <!-- Issue type -->
+                <div class="fb-field">
+                    <label>What's the issue?</label>
+                    <div class="fb-type-grid">
+                        <div class="fb-type-btn selected" data-val="inaccurate" onclick="selectType(this)"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> Inaccurate Info</div>
+                        <div class="fb-type-btn" data-val="spam"       onclick="selectType(this)"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Spam / Duplicate</div>
+                        <div class="fb-type-btn" data-val="outdated"   onclick="selectType(this)"><i class="bi bi-funnel-fill" style="color:#94a3b8;font-size:1.1rem;"></i> Outdated Report</div>
+                        <div class="fb-type-btn" data-val="other"      onclick="selectType(this)"><i class="bi bi-lightning-fill" style="color:#fbbf24;font-size:1.1rem;"></i> Other / Suggestion</div>
+                    </div>
+                    <input type="hidden" name="feedback_type" id="feedback_type" value="inaccurate">
+                </div>
+
+                <!-- Content type + ID -->
+                <div class="fb-row">
+                    <div class="fb-field">
+                        <label>Related to</label>
+                        <select name="content_type">
+                            <option value="general"  {% if prefill_type == 'general'  %}selected{% endif %}>General Feedback</option>
+                            <option value="disaster" {% if prefill_type == 'disaster' %}selected{% endif %}>Disaster Report</option>
+                            <option value="missing"  {% if prefill_type == 'missing'  %}selected{% endif %}>Missing Person</option>
+                            <option value="injured"  {% if prefill_type == 'injured'  %}selected{% endif %}>Injured Person</option>
+                        </select>
+                    </div>
+                    <div class="fb-field">
+                        <label>Report ID <span style="color:var(--muted);font-weight:400;">(if known)</span></label>
+                        <input type="number" name="object_id" placeholder="e.g. 42" value="{{ prefill_id }}" min="1">
+                    </div>
+                </div>
+
+                <!-- Message -->
+                <div class="fb-field">
+                    <label>Description <span style="color:var(--accent);">*</span></label>
+                    <textarea name="message" placeholder="Describe the issue or your feedback clearly…" required maxlength="1000"></textarea>
+                </div>
+
+                <!-- Reporter info -->
+                <div class="fb-row">
+                    <div class="fb-field">
+                        <label>Your Name <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+                        <input type="text" name="reporter_name" placeholder="Anonymous"
+                            value="{{ user.get_full_name|default:'' }}">
+                    </div>
+                    <div class="fb-field">
+                        <label>Email <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+                        <input type="email" name="reporter_email" placeholder="for follow-up"
+                            value="{{ user.email|default:'' }}">
+                    </div>
+                </div>
+
+                <button type="submit" class="fb-submit"><i class="bi bi-upload" style="color:#94a3b8;font-size:1.1rem;"></i> Submit Feedback</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectType(el) {
+    document.querySelectorAll('.fb-type-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('feedback_type').value = el.dataset.val;
+}
+</script>
+{% endblock %}

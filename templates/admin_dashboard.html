@@ -1,0 +1,718 @@
+{% extends "base.html" %}
+{% block title %}Command Dashboard{% endblock %}
+
+{% block extra_css %}
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');
+
+:root {
+    --cmd-amber:  #f59e0b;
+    --cmd-red:    #ef4444;
+    --cmd-green:  #22c55e;
+    --cmd-blue:   #38bdf8;
+    --cmd-purple: #a78bfa;
+    --cmd-orange: #fb923c;
+    --mono: 'JetBrains Mono', monospace;
+    --cond: 'Barlow Condensed', sans-serif;
+}
+
+/* Scan-line texture */
+.cmd-page { position: relative; }
+.cmd-page::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px
+    );
+}
+.cmd-page > * { position: relative; z-index: 1; }
+
+/* ── HEADER ── */
+.cmd-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem; margin-bottom: 1.75rem; flex-wrap: wrap;
+    padding-bottom: 1.25rem; border-bottom: 1px solid rgba(245,158,11,0.2);
+}
+.cmd-eyebrow {
+    font-family: var(--mono); font-size: 0.62rem; letter-spacing: 2px;
+    color: var(--cmd-amber); text-transform: uppercase;
+    display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;
+}
+.cmd-eyebrow::before {
+    content: ''; display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--cmd-amber);
+    box-shadow: 0 0 8px var(--cmd-amber);
+    animation: pulse-amber 2s infinite;
+}
+@keyframes pulse-amber {
+    0%,100% { opacity:1; box-shadow:0 0 8px var(--cmd-amber); }
+    50%      { opacity:0.4; box-shadow:0 0 3px var(--cmd-amber); }
+}
+.cmd-title {
+    font-family: var(--cond); font-size: 2.4rem; font-weight: 800;
+    letter-spacing: 1px; line-height: 1; color: var(--text);
+}
+.cmd-subtitle { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); margin-top: 0.3rem; }
+.cmd-subtitle span { color: var(--cmd-amber); }
+.cmd-header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem; }
+.cmd-clock { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; color: var(--cmd-amber); letter-spacing: 3px; }
+.cmd-date  { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); }
+.cmd-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+.cmd-btn {
+    font-family: var(--mono); font-size: 0.65rem; font-weight: 600;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    padding: 0.4rem 0.85rem; border-radius: 4px;
+    border: 1px solid; text-decoration: none; transition: all 0.15s; white-space: nowrap;
+}
+.cmd-btn-red   { border-color:var(--cmd-red);   color:var(--cmd-red);   background:rgba(239,68,68,0.07); }
+.cmd-btn-red:hover   { background:rgba(239,68,68,0.18); }
+.cmd-btn-amber { border-color:var(--cmd-amber); color:var(--cmd-amber); background:rgba(245,158,11,0.07); }
+.cmd-btn-amber:hover { background:rgba(245,158,11,0.18); }
+.cmd-btn-ghost { border-color:var(--border); color:var(--muted); background:transparent; }
+.cmd-btn-ghost:hover { border-color:rgba(255,255,255,0.25); color:var(--text); }
+
+/* ── TICKER ── */
+.cmd-ticker {
+    display: flex; align-items: center; gap: 1rem;
+    background: rgba(245,158,11,0.04); border: 1px solid rgba(245,158,11,0.15);
+    border-radius: 6px; padding: 0.5rem 1rem; margin-bottom: 1.75rem;
+    font-family: var(--mono); font-size: 0.68rem; overflow: hidden;
+}
+.ticker-label {
+    flex-shrink: 0; color: var(--cmd-amber); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    border-right: 1px solid rgba(245,158,11,0.25); padding-right: 1rem;
+}
+.ticker-scroll { display: flex; gap: 2.5rem; overflow-x: auto; flex: 1; white-space: nowrap; scrollbar-width: none; }
+.ticker-scroll::-webkit-scrollbar { display: none; }
+.t-item { display: flex; align-items: center; gap: 0.4rem; color: var(--muted); }
+.t-dot  { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.t-val  { color: var(--text); font-weight: 700; }
+
+/* ── KPI ROW ── */
+.kpi-row {
+    display: grid; grid-template-columns: repeat(5,1fr); gap: 1px;
+    background: var(--border); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; margin-bottom: 1.75rem;
+}
+@media (max-width:1000px) { .kpi-row { grid-template-columns: repeat(3,1fr); } }
+@media (max-width:600px)  { .kpi-row { grid-template-columns: repeat(2,1fr); } }
+.kpi {
+    background: var(--surface); padding: 1.25rem 1.1rem;
+    text-decoration: none; display: block; transition: background 0.15s; position: relative;
+}
+.kpi:hover { background: rgba(255,255,255,0.025); }
+.kpi-accent { position:absolute; bottom:0; left:0; right:0; height:2px; }
+.kpi-tag {
+    font-family: var(--mono); font-size: 0.58rem; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.6rem;
+}
+.kpi-tag .dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.kpi-val {
+    font-family: var(--cond); font-size: 3rem; font-weight: 800;
+    line-height: 1; letter-spacing: -1px; margin-bottom: 0.2rem;
+}
+.kpi-desc { font-family: var(--mono); font-size: 0.58rem; color: var(--muted); }
+.kpi-chips { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.65rem; }
+.chip {
+    font-family: var(--mono); font-size: 0.58rem; font-weight: 700;
+    padding: 1px 6px; border-radius: 3px; white-space: nowrap;
+}
+.ch-r { background:rgba(239,68,68,0.15);   color:#f87171; }
+.ch-g { background:rgba(34,197,94,0.15);   color:#4ade80; }
+.ch-a { background:rgba(245,158,11,0.15);  color:#f59e0b; }
+.ch-b { background:rgba(56,189,248,0.15);  color:#38bdf8; }
+.ch-p { background:rgba(167,139,250,0.15); color:#a78bfa; }
+.ch-x { background:rgba(107,114,128,0.15); color:#9ca3af; }
+
+/* ── PANEL ── */
+.panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+}
+.panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.7rem 1rem; border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.015);
+}
+.panel-title {
+    font-family: var(--mono); font-size: 0.68rem; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.p-accent { width:3px; height:12px; border-radius:1px; }
+.panel-link {
+    font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+    text-decoration: none; transition: color 0.15s;
+}
+.panel-link:hover { color: var(--cmd-amber); }
+
+/* ── TABLE ── */
+.dt { width:100%; border-collapse:collapse; }
+.dt th {
+    font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); padding: 0.5rem 1rem;
+    text-align: left; border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.01); white-space: nowrap;
+}
+.dt td {
+    padding: 0.65rem 1rem; font-size: 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--muted);
+    vertical-align: middle;
+}
+.dt tr:last-child td { border-bottom: none; }
+.dt tr:hover td { background: rgba(255,255,255,0.018); }
+.dt td b { color: var(--text); font-weight: 600; }
+.dt .er td { text-align:center; padding:2rem; font-family:var(--mono); font-size:0.7rem; color:var(--muted); }
+
+.row-n {
+    font-family:var(--mono); font-size:0.58rem; color:var(--muted);
+    background:rgba(255,255,255,0.04); border-radius:3px;
+    padding:1px 5px; border:1px solid var(--border);
+}
+.type-badge {
+    display:inline-flex; align-items:center; gap:4px;
+    font-family:var(--mono); font-size:0.65rem; font-weight:600;
+    padding:2px 7px; border-radius:3px;
+    background:rgba(255,255,255,0.04); color:var(--text);
+    border:1px solid rgba(255,255,255,0.07); white-space:nowrap;
+}
+
+/* Pills */
+.lvl {
+    font-family:var(--mono); font-size:0.6rem; font-weight:700;
+    padding:2px 7px; border-radius:3px; text-transform:uppercase; white-space:nowrap;
+}
+.lv-critical   { background:rgba(239,68,68,0.9);   color:#fff; }
+.lv-high       { background:rgba(239,68,68,0.15);  color:#f87171; }
+.lv-moderate   { background:rgba(245,158,11,0.15); color:#f59e0b; }
+.lv-low        { background:rgba(34,197,94,0.15);  color:#4ade80; }
+.lv-minimal    { background:rgba(56,189,248,0.15); color:#38bdf8; }
+.lv-active     { background:rgba(239,68,68,0.15);  color:#f87171; }
+.lv-found      { background:rgba(34,197,94,0.15);  color:#4ade80; }
+.lv-deceased   { background:rgba(107,114,128,0.15);color:#9ca3af; }
+.lv-recovering { background:rgba(245,158,11,0.15); color:#f59e0b; }
+.lv-discharged { background:rgba(34,197,94,0.15);  color:#4ade80; }
+.lv-minor      { background:rgba(34,197,94,0.15);  color:#4ade80; }
+
+/* ── CHARTS ROW ── */
+.charts-row {
+    display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;
+}
+@media (max-width:720px) { .charts-row { grid-template-columns:1fr; } }
+
+/* Bar breakdown */
+.bk-list { padding:0.85rem 1rem; display:flex; flex-direction:column; gap:0.75rem; }
+.bk-row  { display:flex; align-items:center; gap:0.6rem; }
+.bk-lbl  { font-family:var(--mono); font-size:0.64rem; min-width:90px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bk-track { flex:1; height:5px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden; }
+.bk-fill  { height:100%; border-radius:2px; transition:width 0.9s cubic-bezier(.16,1,.3,1); width:0; }
+.bk-n     { font-family:var(--mono); font-size:0.63rem; font-weight:700; color:var(--text); min-width:20px; text-align:right; }
+
+/* Donut charts */
+.donuts-row { display:flex; justify-content:space-around; gap:0.75rem; padding:1.1rem 0.5rem; flex-wrap:wrap; }
+.donut-item { text-align:center; }
+.donut-wrap { position:relative; width:90px; height:90px; margin:0 auto 0.5rem; }
+.donut-wrap svg { transform:rotate(-90deg); }
+.d-bg  { fill:none; stroke:rgba(255,255,255,0.05); stroke-width:10; }
+.d-arc { fill:none; stroke-width:10; stroke-linecap:butt; transition:stroke-dashoffset 1.1s cubic-bezier(.16,1,.3,1); }
+.donut-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.d-num { font-family:var(--cond); font-size:1.6rem; font-weight:800; line-height:1; }
+.d-sub { font-family:var(--mono); font-size:0.48rem; color:var(--muted); margin-top:1px; }
+.donut-lbl  { font-family:var(--mono); font-size:0.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.donut-meta { font-family:var(--mono); font-size:0.57rem; color:var(--muted); margin-top:2px; line-height:1.6; }
+
+/* ── MAIN GRID ── */
+.dash-main {
+    display:grid; grid-template-columns:1fr 305px; gap:1.25rem;
+    margin-bottom:1.25rem; align-items:start;
+}
+@media (max-width:900px) { .dash-main { grid-template-columns:1fr; } }
+
+/* Quick actions */
+.qa-grid { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); }
+.qa-cell {
+    background:var(--surface); padding:0.85rem 0.5rem;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:0.3rem; text-decoration:none; transition:background 0.12s; text-align:center;
+}
+.qa-cell:hover { background:rgba(255,255,255,0.03); }
+.qa-em  { font-size:1.2rem; }
+.qa-lbl { font-family:var(--mono); font-size:0.58rem; color:var(--text); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+
+/* Activity feed */
+.feed-item {
+    display:flex; gap:0.65rem; padding:0.65rem 1rem;
+    border-bottom:1px solid rgba(255,255,255,0.03); align-items:flex-start;
+}
+.feed-item:last-child { border-bottom:none; }
+.feed-bar { width:2px; min-height:34px; border-radius:1px; flex-shrink:0; margin-top:3px; }
+.feed-title { font-size:0.78rem; color:var(--text); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.feed-sub   { font-family:var(--mono); font-size:0.6rem; color:var(--muted); margin-top:1px; }
+
+/* ── BOTTOM GRID ── */
+.bottom-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;
+}
+@media (max-width:720px) { .bottom-grid { grid-template-columns:1fr; } }
+
+/* ── FEEDBACK ── */
+.fb-row {
+    display:flex; align-items:flex-start; gap:0.75rem;
+    padding:0.75rem 1rem; border-bottom:1px solid rgba(255,255,255,0.03);
+}
+.fb-row:last-child { border-bottom:none; }
+.fb-tag {
+    flex-shrink:0; font-family:var(--mono); font-size:0.58rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.5px;
+    padding:2px 7px; border-radius:3px; margin-top:2px; white-space:nowrap;
+}
+.fb-inaccurate { background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.2); }
+.fb-spam       { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.2); }
+.fb-outdated   { background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.2); }
+.fb-other      { background:rgba(107,114,128,0.12);color:#9ca3af; border:1px solid rgba(107,114,128,0.2); }
+.fb-body       { flex:1; min-width:0; }
+.fb-msg        { font-size:0.8rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fb-meta       { font-family:var(--mono); font-size:0.6rem; color:var(--muted); margin-top:2px; }
+.btn-resolve {
+    flex-shrink:0; font-family:var(--mono); font-size:0.6rem; font-weight:700;
+    padding:3px 9px; border-radius:3px; cursor:pointer; white-space:nowrap;
+    background:rgba(34,197,94,0.07); color:#4ade80;
+    border:1px solid rgba(34,197,94,0.25); transition:all 0.15s;
+    text-transform:uppercase; letter-spacing:0.5px;
+}
+.btn-resolve:hover { background:rgba(34,197,94,0.18); }
+
+.empty-state { padding:1.75rem; text-align:center; font-family:var(--mono); font-size:0.7rem; color:var(--muted); }
+
+@media (max-width:768px) {
+    .cmd-header { flex-direction:column; }
+    .cmd-header-right { align-items:flex-start; }
+    .cmd-ticker { display:none; }
+    .dt th:nth-child(n+5), .dt td:nth-child(n+5) { display:none; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="cmd-page">
+
+<!-- HEADER -->
+<div class="cmd-header">
+    <div>
+        <div class="cmd-eyebrow">DisasterNet · Incident Command System</div>
+        <div class="cmd-title">COMMAND DASHBOARD</div>
+        <div class="cmd-subtitle">
+            UNIT: ADMIN ·
+            STATUS: <span>{% if critical_injured or active_missing %}<i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> ACTIVE INCIDENTS{% else %}● NOMINAL{% endif %}</span> ·
+            INCIDENTS: <span>{{ total_disasters }}</span>
+        </div>
+    </div>
+    <div class="cmd-header-right">
+        <div class="cmd-clock" id="cmd-clock">--:--:--</div>
+        <div class="cmd-date"  id="cmd-date">---</div>
+        <div class="cmd-actions">
+            <a href="{% url 'report_disaster' %}" class="cmd-btn cmd-btn-red"><i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i> File Report</a>
+            <a href="{% url 'view_disasters' %}"  class="cmd-btn cmd-btn-amber"><i class="bi bi-clock-fill" style="color:#94a3b8;font-size:1.1rem;"></i> Records</a>
+            <a href="{% url 'disaster_heatmap' %}" class="cmd-btn cmd-btn-ghost"><i class="bi bi-map-fill" style="color:#38bdf8;font-size:1.1rem;"></i> Heatmap</a>
+            <a href="/admin/"                      class="cmd-btn cmd-btn-ghost"><i class="bi bi-gear-fill" style="color:#94a3b8;font-size:1.1rem;"></i> DB Admin</a>
+        </div>
+    </div>
+</div>
+
+<!-- TICKER -->
+<div class="cmd-ticker">
+    <div class="ticker-label">▶ LIVE</div>
+    <div class="ticker-scroll">
+        <span class="t-item"><span class="t-dot" style="background:#f87171;box-shadow:0 0 5px #f87171;"></span>DISASTERS <span class="t-val">{{ total_disasters }}</span></span>
+        <span class="t-item"><span class="t-dot" style="background:#38bdf8;"></span>MISSING ACTIVE <span class="t-val">{{ active_missing }}</span></span>
+        <span class="t-item"><span class="t-dot" style="background:#fb923c;"></span>CRITICAL INJURED <span class="t-val">{{ critical_injured }}</span></span>
+        <span class="t-item"><span class="t-dot" style="background:#4ade80;"></span>RAISED <span class="t-val">₹{{ donation_total|floatformat:0 }}</span></span>
+        <span class="t-item"><span class="t-dot" style="background:#f59e0b;"></span>FEEDBACK <span class="t-val">{{ pending_feedback }}</span></span>
+        <span class="t-item"><span class="t-dot" style="background:#4ade80;"></span>FOUND <span class="t-val">{{ missing_by_status.Found }}</span></span>
+        <span class="t-item"><span class="t-dot" style="background:#a78bfa;"></span>DISCHARGED <span class="t-val">{{ injured_by_status.Discharged }}</span></span>
+    </div>
+</div>
+
+<!-- KPI ROW -->
+<div class="kpi-row">
+
+    <a href="{% url 'view_disasters' %}" class="kpi">
+        <div class="kpi-accent" style="background:var(--cmd-red);"></div>
+        <div class="kpi-tag"><span class="dot" style="background:var(--cmd-red);box-shadow:0 0 6px var(--cmd-red);"></span>Incidents</div>
+        <div class="kpi-val" style="color:var(--cmd-red);">{{ total_disasters }}</div>
+        <div class="kpi-desc">TOTAL REPORTED</div>
+        <div class="kpi-chips">
+            {% for row in disaster_by_level %}{% if row.crowd_level == 'Critical' %}<span class="chip ch-r">{{ row.count }} critical</span>{% endif %}{% if row.crowd_level == 'High' %}<span class="chip ch-a">{{ row.count }} high</span>{% endif %}{% endfor %}
+        </div>
+    </a>
+
+    <a href="{% url 'view_missing' %}" class="kpi">
+        <div class="kpi-accent" style="background:var(--cmd-blue);"></div>
+        <div class="kpi-tag"><span class="dot" style="background:var(--cmd-blue);"></span>Missing</div>
+        <div class="kpi-val" style="color:var(--cmd-blue);">{{ total_missing }}</div>
+        <div class="kpi-desc">PERSONS REPORTED</div>
+        <div class="kpi-chips">
+            <span class="chip ch-r">{{ missing_by_status.Active }} active</span>
+            <span class="chip ch-g">{{ missing_by_status.Found }} found</span>
+        </div>
+    </a>
+
+    <a href="{% url 'view_injured' %}" class="kpi">
+        <div class="kpi-accent" style="background:var(--cmd-orange);"></div>
+        <div class="kpi-tag"><span class="dot" style="background:var(--cmd-orange);"></span>Injured</div>
+        <div class="kpi-val" style="color:var(--cmd-orange);">{{ total_injured }}</div>
+        <div class="kpi-desc">PERSONS TREATED</div>
+        <div class="kpi-chips">
+            {% if critical_injured %}<span class="chip ch-r">{{ critical_injured }} critical</span>{% endif %}
+            <span class="chip ch-a">{{ injured_by_status.Recovering }} recovering</span>
+            <span class="chip ch-g">{{ injured_by_status.Discharged }} out</span>
+        </div>
+    </a>
+
+    <a href="{% url 'donate' %}" class="kpi">
+        <div class="kpi-accent" style="background:var(--cmd-green);"></div>
+        <div class="kpi-tag"><span class="dot" style="background:var(--cmd-green);"></span>Relief Fund</div>
+        <div class="kpi-val" style="color:var(--cmd-green);">{{ total_donations }}</div>
+        <div class="kpi-desc">TOTAL DONORS</div>
+        <div class="kpi-chips">
+            <span class="chip ch-g">₹{{ donation_total|floatformat:0 }} raised</span>
+        </div>
+    </a>
+
+    <a href="{% url 'admin_dashboard' %}" class="kpi">
+        <div class="kpi-accent" style="background:var(--cmd-amber);"></div>
+        <div class="kpi-tag">
+            <span class="dot" style="background:var(--cmd-amber);{% if pending_feedback %}box-shadow:0 0 6px var(--cmd-amber);{% endif %}"></span>
+            Feedback
+        </div>
+        <div class="kpi-val" style="color:var(--cmd-amber);">{{ pending_feedback }}</div>
+        <div class="kpi-desc">NEEDS REVIEW</div>
+        <div class="kpi-chips">
+            {% if pending_feedback > 0 %}<span class="chip ch-a">⚠ Unresolved</span>
+            {% else %}<span class="chip ch-g">✓ All clear</span>{% endif %}
+        </div>
+    </a>
+
+</div>
+
+<!-- CHARTS ROW -->
+<div class="charts-row">
+
+    <!-- Disaster type bars -->
+    <div class="panel">
+        <div class="panel-head">
+            <span class="panel-title"><span class="p-accent" style="background:var(--cmd-red);"></span>Incidents by Type</span>
+            <a href="{% url 'view_disasters' %}" class="panel-link">view all →</a>
+        </div>
+        <div class="bk-list">
+            {% for row in disaster_by_type %}
+            <div class="bk-row">
+                <span class="bk-lbl">{% if row.disaster_type == 'Fire' %}<i class="bi bi-fire" style="color:#fb923c;font-size:1.1rem;"></i>{% elif row.disaster_type == 'Flood' %}<i class="bi bi-water" style="color:#38bdf8;font-size:1.1rem;"></i>{% elif row.disaster_type == 'Earthquake' %}<i class="bi bi-globe-americas" style="color:#a78bfa;font-size:1.1rem;"></i>{% elif row.disaster_type == 'Cyclone' %}<i class="bi bi-wind" style="color:#818cf8;font-size:1.1rem;"></i>{% elif row.disaster_type == 'Accident' %}<i class="bi bi-truck-front-fill" style="color:#fbbf24;font-size:1.1rem;"></i>{% elif row.disaster_type == 'Landslide' %}<i class="bi bi-mountain" style="color:#84cc16;font-size:1.1rem;"></i>{% else %}<i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i>{% endif %} {{ row.disaster_type }}</span>
+                <div class="bk-track">
+                    <div class="bk-fill"
+                        data-pct="{% if total_disasters %}{% widthratio row.count total_disasters 100 %}{% else %}0{% endif %}"
+                        style="background:{% if row.disaster_type == 'Fire' %}#ef4444{% elif row.disaster_type == 'Flood' %}#38bdf8{% elif row.disaster_type == 'Earthquake' %}#a78bfa{% elif row.disaster_type == 'Cyclone' %}#818cf8{% elif row.disaster_type == 'Accident' %}#f59e0b{% elif row.disaster_type == 'Landslide' %}#84cc16{% else %}#6b7280{% endif %}">
+                    </div>
+                </div>
+                <span class="bk-n">{{ row.count }}</span>
+            </div>
+            {% empty %}<div class="empty-state">No incidents on record.</div>{% endfor %}
+        </div>
+    </div>
+
+    <!-- Person status donuts -->
+    <div class="panel">
+        <div class="panel-head">
+            <span class="panel-title"><span class="p-accent" style="background:var(--cmd-blue);"></span>Personnel Status</span>
+        </div>
+        <div class="donuts-row">
+            <!-- Missing -->
+            <div class="donut-item">
+                <div class="donut-wrap">
+                    <svg viewBox="0 0 90 90" width="90" height="90">
+                        <circle class="d-bg" cx="45" cy="45" r="35"/>
+                        <circle class="d-arc" cx="45" cy="45" r="35"
+                            stroke="#f87171" stroke-dasharray="220" stroke-dashoffset="220"
+                            data-active="{{ missing_by_status.Active }}" data-total="{{ total_missing }}"/>
+                    </svg>
+                    <div class="donut-center">
+                        <span class="d-num" style="color:#f87171;">{{ active_missing }}</span>
+                        <span class="d-sub">active</span>
+                    </div>
+                </div>
+                <div class="donut-lbl">Missing</div>
+                <div class="donut-meta">{{ missing_by_status.Found }} found<br>{{ missing_by_status.Deceased }} deceased</div>
+            </div>
+            <!-- Injured critical -->
+            <div class="donut-item">
+                <div class="donut-wrap">
+                    <svg viewBox="0 0 90 90" width="90" height="90">
+                        <circle class="d-bg" cx="45" cy="45" r="35"/>
+                        <circle class="d-arc" cx="45" cy="45" r="35"
+                            stroke="#fb923c" stroke-dasharray="220" stroke-dashoffset="220"
+                            data-active="{{ critical_injured }}" data-total="{{ total_injured }}"/>
+                    </svg>
+                    <div class="donut-center">
+                        <span class="d-num" style="color:#fb923c;">{{ critical_injured }}</span>
+                        <span class="d-sub">critical</span>
+                    </div>
+                </div>
+                <div class="donut-lbl">Injured</div>
+                <div class="donut-meta">{{ injured_by_status.Recovering }} recov.<br>{{ injured_by_status.Discharged }} disch.</div>
+            </div>
+            <!-- Recovery rate -->
+            <div class="donut-item">
+                <div class="donut-wrap">
+                    <svg viewBox="0 0 90 90" width="90" height="90">
+                        <circle class="d-bg" cx="45" cy="45" r="35"/>
+                        <circle class="d-arc" cx="45" cy="45" r="35"
+                            stroke="#4ade80" stroke-dasharray="220" stroke-dashoffset="220"
+                            data-active="{{ missing_by_status.Found }}" data-total="{{ total_missing }}"/>
+                    </svg>
+                    <div class="donut-center">
+                        <span class="d-num" style="color:#4ade80;">{{ missing_by_status.Found }}</span>
+                        <span class="d-sub">found</span>
+                    </div>
+                </div>
+                <div class="donut-lbl">Recovery</div>
+                <div class="donut-meta">{{ injured_by_severity.Minor }} minor<br>{{ injured_by_severity.Moderate }} moderate</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- MAIN CONTENT + SIDEBAR -->
+<div class="dash-main">
+
+    <!-- Disaster table -->
+    <div class="panel">
+        <div class="panel-head">
+            <span class="panel-title"><span class="p-accent" style="background:var(--cmd-red);"></span>Recent Incident Reports</span>
+            <a href="{% url 'view_disasters' %}" class="panel-link">all records →</a>
+        </div>
+        <table class="dt">
+            <thead>
+                <tr><th>#</th><th>Type</th><th>Location</th><th>Level</th><th>~People</th><th>Age</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for d in recent_disasters %}
+                <tr>
+                    <td><span class="row-n">{{ forloop.counter }}</span></td>
+                    <td><span class="type-badge">{% if d.disaster_type == 'Fire' %}<i class="bi bi-fire" style="color:#fb923c;font-size:1.1rem;"></i>{% elif d.disaster_type == 'Flood' %}<i class="bi bi-water" style="color:#38bdf8;font-size:1.1rem;"></i>{% elif d.disaster_type == 'Earthquake' %}<i class="bi bi-globe-americas" style="color:#a78bfa;font-size:1.1rem;"></i>{% elif d.disaster_type == 'Cyclone' %}<i class="bi bi-wind" style="color:#818cf8;font-size:1.1rem;"></i>{% elif d.disaster_type == 'Accident' %}<i class="bi bi-truck-front-fill" style="color:#fbbf24;font-size:1.1rem;"></i>{% elif d.disaster_type == 'Landslide' %}<i class="bi bi-mountain" style="color:#84cc16;font-size:1.1rem;"></i>{% else %}<i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i>{% endif %} {{ d.disaster_type }}</span></td>
+                    <td><b>{{ d.location|truncatechars:26 }}</b></td>
+                    <td><span class="lvl lv-{{ d.crowd_level|lower }}">{{ d.crowd_level }}</span></td>
+                    <td style="font-family:var(--mono);font-size:0.7rem;">{% if d.estimated_people %}{{ d.estimated_people }}{% else %}<span style="color:var(--muted)">—</span>{% endif %}</td>
+                    <td style="font-family:var(--mono);font-size:0.66rem;white-space:nowrap;">{{ d.reported_at|timesince }}</td>
+                    <td><a href="{% url 'disaster_detail' d.pk %}" class="panel-link">view →</a></td>
+                </tr>
+                {% empty %}
+                <tr class="er"><td colspan="7">No incident reports on record.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Sidebar -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+        <!-- Quick actions -->
+        <div class="panel">
+            <div class="panel-head">
+                <span class="panel-title"><span class="p-accent" style="background:var(--cmd-amber);"></span>Quick Actions</span>
+            </div>
+            <div class="qa-grid">
+                <a href="{% url 'report_disaster' %}" class="qa-cell"><span class="qa-em"><i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span><span class="qa-lbl">Disaster</span></a>
+                <a href="{% url 'report_missing' %}"  class="qa-cell"><span class="qa-em"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i></span><span class="qa-lbl">Missing</span></a>
+                <a href="{% url 'report_injured' %}"  class="qa-cell"><span class="qa-em"><i class="bi bi-hospital-fill" style="color:#f87171;font-size:1.1rem;"></i></span><span class="qa-lbl">Injured</span></a>
+                <a href="{% url 'donate' %}"          class="qa-cell"><span class="qa-em"><i class="bi bi-currency-rupee" style="color:#4ade80;font-size:1.1rem;"></i></span><span class="qa-lbl">Donate</span></a>
+                <a href="{% url 'disaster_heatmap' %}" class="qa-cell"><span class="qa-em"><i class="bi bi-map-fill" style="color:#38bdf8;font-size:1.1rem;"></i></span><span class="qa-lbl">Heatmap</span></a>
+                <a href="/admin/"                     class="qa-cell"><span class="qa-em"><i class="bi bi-gear-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span><span class="qa-lbl">DB Admin</span></a>
+            </div>
+        </div>
+
+        <!-- Activity feed -->
+        <div class="panel">
+            <div class="panel-head">
+                <span class="panel-title"><span class="p-accent" style="background:var(--cmd-purple);"></span>Activity Feed</span>
+            </div>
+            {% for d in recent_disasters|slice:":3" %}
+            <div class="feed-item">
+                <div class="feed-bar" style="background:#f87171;"></div>
+                <div>
+                    <div class="feed-title">{{ d.disaster_type }} · {{ d.location|truncatechars:26 }}</div>
+                    <div class="feed-sub">{{ d.reported_at|timesince }} ago · {{ d.crowd_level }}</div>
+                </div>
+            </div>
+            {% endfor %}
+            {% for m in recent_missing|slice:":2" %}
+            <div class="feed-item">
+                <div class="feed-bar" style="background:#38bdf8;"></div>
+                <div>
+                    <div class="feed-title">{{ m.name }} — missing</div>
+                    <div class="feed-sub">{{ m.reported_at|timesince }} ago · {{ m.last_seen_location|truncatechars:24 }}</div>
+                </div>
+            </div>
+            {% endfor %}
+            {% for i in recent_injured|slice:":2" %}
+            <div class="feed-item">
+                <div class="feed-bar" style="background:#fb923c;"></div>
+                <div>
+                    <div class="feed-title">{{ i.name }} · {{ i.injury_type|truncatechars:20 }}</div>
+                    <div class="feed-sub">{{ i.reported_at|timesince }} ago · <span class="lvl lv-{{ i.severity|lower }}">{{ i.severity }}</span></div>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not recent_disasters and not recent_missing and not recent_injured %}
+            <div class="empty-state">No recent activity.</div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<!-- BOTTOM GRID -->
+<div class="bottom-grid">
+
+    <!-- Missing -->
+    <div class="panel">
+        <div class="panel-head">
+            <span class="panel-title"><span class="p-accent" style="background:var(--cmd-blue);"></span>Missing Persons</span>
+            <a href="{% url 'view_missing' %}" class="panel-link">all →</a>
+        </div>
+        <table class="dt">
+            <thead><tr><th>Name</th><th>Age/Sex</th><th>Last Seen</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for m in recent_missing %}
+                <tr>
+                    <td><b>{{ m.name }}</b></td>
+                    <td style="font-family:var(--mono);font-size:0.66rem;">{{ m.age }} · {{ m.gender|slice:":1" }}</td>
+                    <td>{{ m.last_seen_location|truncatechars:20 }}</td>
+                    <td><span class="lvl lv-{{ m.status|lower }}">{{ m.status }}</span></td>
+                </tr>
+                {% empty %}<tr class="er"><td colspan="4">No records.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Injured -->
+    <div class="panel">
+        <div class="panel-head">
+            <span class="panel-title"><span class="p-accent" style="background:var(--cmd-orange);"></span>Injured Persons</span>
+            <a href="{% url 'view_injured' %}" class="panel-link">all →</a>
+        </div>
+        <table class="dt">
+            <thead><tr><th>Name</th><th>Injury</th><th>Severity</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for i in recent_injured %}
+                <tr>
+                    <td><b>{{ i.name }}</b></td>
+                    <td>{{ i.injury_type|truncatechars:18 }}</td>
+                    <td><span class="lvl lv-{{ i.severity|lower }}">{{ i.severity }}</span></td>
+                    <td><span class="lvl lv-{{ i.status|lower }}">{{ i.status }}</span></td>
+                </tr>
+                {% empty %}<tr class="er"><td colspan="4">No records.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Donations -->
+    <div class="panel">
+        <div class="panel-head">
+            <span class="panel-title"><span class="p-accent" style="background:var(--cmd-green);"></span>Recent Donations</span>
+            <a href="{% url 'donate' %}" class="panel-link">all →</a>
+        </div>
+        <table class="dt">
+            <thead><tr><th>Donor</th><th>Purpose</th><th>Mode</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for d in recent_donations %}
+                <tr>
+                    <td><b>{{ d.name|truncatechars:14 }}</b></td>
+                    <td style="font-size:0.72rem;">{{ d.purpose|truncatechars:18 }}</td>
+                    <td style="font-family:var(--mono);font-size:0.65rem;">{{ d.payment_mode }}</td>
+                    <td style="color:#4ade80;font-family:var(--mono);font-weight:700;">₹{{ d.amount|floatformat:0 }}</td>
+                </tr>
+                {% empty %}<tr class="er"><td colspan="4">No donations yet.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Crowd level breakdown -->
+    <div class="panel">
+        <div class="panel-head">
+            <span class="panel-title"><span class="p-accent" style="background:var(--cmd-purple);"></span>Crowd Level Breakdown</span>
+        </div>
+        <div class="bk-list">
+            {% for row in disaster_by_level %}
+            <div class="bk-row">
+                <span class="bk-lbl">{{ row.crowd_level }}</span>
+                <div class="bk-track">
+                    <div class="bk-fill"
+                        data-pct="{% if total_disasters %}{% widthratio row.count total_disasters 100 %}{% else %}0{% endif %}"
+                        style="background:{% if row.crowd_level == 'Critical' %}#ef4444{% elif row.crowd_level == 'High' %}#f87171{% elif row.crowd_level == 'Moderate' %}#f59e0b{% elif row.crowd_level == 'Low' %}#4ade80{% else %}#38bdf8{% endif %}">
+                    </div>
+                </div>
+                <span class="bk-n">{{ row.count }}</span>
+            </div>
+            {% empty %}<div class="empty-state">No data yet.</div>{% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- FEEDBACK -->
+<div class="panel" style="margin-bottom:1.5rem;">
+    <div class="panel-head">
+        <span class="panel-title">
+            <span class="p-accent" style="background:var(--cmd-amber);"></span>
+            Pending Feedback
+            {% if pending_feedback %}<span style="color:var(--cmd-amber);margin-left:0.4rem;font-weight:700;">{{ pending_feedback }}</span>{% endif %}
+        </span>
+        <a href="{% url 'feedback' %}" class="panel-link">submit →</a>
+    </div>
+    {% if recent_feedback %}
+        {% for fb in recent_feedback %}
+        <div class="fb-row">
+            <span class="fb-tag fb-{{ fb.feedback_type }}">{{ fb.feedback_type }}</span>
+            <div class="fb-body">
+                <div class="fb-msg">{{ fb.message|truncatechars:90 }}</div>
+                <div class="fb-meta">{{ fb.content_type }}{% if fb.object_id %} #{{ fb.object_id }}{% endif %} · {{ fb.reporter_name }} · {{ fb.submitted_at|timesince }} ago</div>
+            </div>
+            <form method="post" action="{% url 'resolve_feedback' fb.pk %}">
+                {% csrf_token %}
+                <button class="btn-resolve" type="submit"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Resolve</button>
+            </form>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> No pending feedback — all clear.</div>
+    {% endif %}
+</div>
+
+</div><!-- end cmd-page -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function tick() {
+    const now = new Date();
+    document.getElementById('cmd-clock').textContent = now.toTimeString().slice(0,8);
+    document.getElementById('cmd-date').textContent  =
+        now.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+}
+tick(); setInterval(tick, 1000);
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.bk-fill').forEach(el => {
+        const pct = parseFloat(el.dataset.pct) || 0;
+        setTimeout(() => { el.style.width = Math.max(pct, 1) + '%'; }, 200);
+    });
+    document.querySelectorAll('.d-arc').forEach(el => {
+        const active = parseFloat(el.dataset.active) || 0;
+        const total  = parseFloat(el.dataset.total)  || 1;
+        const offset = 220 * (1 - Math.min(active / total, 1));
+        setTimeout(() => { el.style.strokeDashoffset = offset; }, 350);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,722 @@
+{% extends "base.html" %}
+
+{% block title %}Injured Persons{% endblock %}
+
+{% block extra_css %}
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+.page-header-left h2 {
+    font-family: var(--font-head);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.page-header-left p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+
+/* Filter bar */
+.filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+.filter-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.filter-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.filter-btn.active { color: var(--text); border-color: var(--accent); background: rgba(232,59,59,0.1); }
+.filter-btn.minor.active    { border-color:#22c55e; background:rgba(34,197,94,0.1);  color:#4ade80; }
+.filter-btn.moderate.active { border-color:#f59e0b; background:rgba(245,158,11,0.1); color:#fbbf24; }
+.filter-btn.critical.active { border-color:#e83b3b; background:rgba(232,59,59,0.15); color:#f87171; }
+
+.filter-count {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+/* Grid */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Card */
+.person-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+    position: relative;
+}
+.person-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.15);
+}
+.person-card.severity-critical { border-left: 3px solid #e83b3b; }
+.person-card.severity-moderate { border-left: 3px solid #f59e0b; }
+.person-card.severity-minor    { border-left: 3px solid #22c55e; }
+
+.card-photo {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    display: block;
+    background: var(--surface2);
+}
+.card-photo-placeholder {
+    width: 100%;
+    height: 160px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: var(--border);
+}
+
+.card-body { padding: 1rem 1.1rem; }
+
+.card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+.card-name {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+.card-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.severity-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.severity-badge.Minor    { background:rgba(34,197,94,0.15);  color:#4ade80; }
+.severity-badge.Moderate { background:rgba(245,158,11,0.15); color:#fbbf24; }
+.severity-badge.Critical { background:rgba(232,59,59,0.15);  color:#f87171; }
+
+.card-detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.83rem;
+    color: var(--muted);
+    margin-bottom: 0.45rem;
+}
+.card-detail .detail-icon { flex-shrink: 0; width: 16px; text-align: center; }
+.card-detail span { color: var(--text); }
+
+.card-injury {
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin: 0.75rem 0;
+    line-height: 1.5;
+}
+.card-injury strong { color: var(--text); }
+
+.card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 1.1rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+}
+.card-time { font-size: 0.75rem; color: var(--muted); }
+
+/* ── Status update button ── */
+.status-update-btn {
+    font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.55rem;
+    border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer;
+    font-family: var(--font-body); transition: all 0.15s; white-space: nowrap;
+}
+.status-update-btn.status-inj-Active     { color: #f87171; border-color: rgba(232,59,59,0.3); }
+.status-update-btn.status-inj-Recovering { color: #fbbf24; border-color: rgba(251,191,36,0.3); }
+.status-update-btn.status-inj-Discharged { color: #4ade80; border-color: rgba(34,197,94,0.3); }
+.status-update-btn:hover { border-color: rgba(255,255,255,0.3); background: var(--surface2); }
+
+/* ── Status modal ── */
+.status-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    z-index: 2000; display: none; align-items: center; justify-content: center;
+}
+.status-modal-backdrop.open { display: flex; }
+.status-modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.5rem; width: 100%; max-width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6); margin: 1rem;
+}
+.status-modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+.status-modal-sub   { font-size: 0.78rem; color: var(--muted); margin-bottom: 1.25rem; }
+.status-options { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+.status-option {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.65rem 0.85rem; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface2);
+    cursor: pointer; transition: all 0.15s;
+}
+.status-option:hover { border-color: rgba(255,255,255,0.2); }
+.status-option.selected { border-color: var(--accent); background: rgba(232,59,59,0.08); }
+.status-option input[type=radio] { accent-color: var(--accent); }
+.status-option-label { font-size: 0.85rem; font-weight: 600; }
+.status-option-desc  { font-size: 0.72rem; color: var(--muted); }
+.status-modal-note {
+    width: 100%; box-sizing: border-box; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 0.55rem 0.8rem; font-size: 0.83rem;
+    font-family: var(--font-body); outline: none; resize: vertical;
+    min-height: 60px; margin-bottom: 1rem; transition: border-color 0.15s;
+}
+.status-modal-note:focus { border-color: var(--accent); }
+.status-modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; }
+.btn-cancel {
+    padding: 0.5rem 1rem; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--muted); font-size: 0.83rem;
+    cursor: pointer; font-family: var(--font-body); transition: all 0.15s;
+}
+.btn-cancel:hover { color: var(--text); }
+.btn-save {
+    padding: 0.5rem 1.2rem; border-radius: 7px; border: none;
+    background: var(--accent); color: #fff; font-size: 0.83rem;
+    font-weight: 700; cursor: pointer; font-family: var(--font-head);
+    transition: background 0.15s;
+}
+.btn-save:hover { background: #c0392b; }
+
+.status-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.status-dot::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+    display: inline-block;
+}
+.status-dot.active::before { background: #f87171; animation: pulse 1.5s infinite; }
+.status-dot.recovering::before { background: #fbbf24; }
+.status-dot.discharged::before { background: #4ade80; }
+@keyframes pulse {
+    0%,100% { opacity:1; }
+    50% { opacity:0.4; }
+}
+
+/* Empty state */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-state h3 { font-family: var(--font-head); font-size: 1.2rem; color: var(--text); margin-bottom: 0.5rem; }
+
+/* Stats bar */
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* stats */
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+}
+.stat-num {
+    font-family: var(--font-head);
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+.stat-num.red    { color: #f87171; }
+.stat-num.yellow { color: #fbbf24; }
+.stat-num.green  { color: #4ade80; }
+.stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── DETAIL MODAL ── */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(5px);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+}
+.modal-backdrop.open { opacity: 1; visibility: visible; }
+.modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.25s ease;
+    position: relative;
+}
+.modal-backdrop.open .modal-box { transform: translateY(0) scale(1); }
+.modal-close {
+    position: absolute;
+    top: 0.9rem; right: 0.9rem;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 10;
+    font-family: var(--font-body);
+}
+.modal-close:hover { color: var(--text); background: rgba(255,255,255,0.1); }
+
+.modal-photo { width:100%; height:220px; object-fit:cover; object-position:top; border-radius:14px 14px 0 0; display:block; }
+.modal-photo-placeholder {
+    width:100%; height:160px;
+    background: var(--surface2);
+    border-radius: 14px 14px 0 0;
+    display: flex; align-items:center; justify-content:center;
+    font-size:3.5rem; color:var(--border);
+}
+
+.modal-severity-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+}
+.modal-sev-badge {
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.modal-sev-badge.Minor    { background:rgba(34,197,94,0.15);  color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
+.modal-sev-badge.Moderate { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+.modal-sev-badge.Critical { background:rgba(239,68,68,0.9);   color:#fff;    border:1px solid #ef4444; }
+.modal-id { font-size:0.72rem; color:var(--muted); font-family:monospace; }
+
+.modal-body { padding: 1.25rem; }
+.modal-name { font-family:var(--font-head); font-size:1.5rem; font-weight:700; margin-bottom:0.25rem; }
+.modal-meta { font-size:0.82rem; color:var(--muted); margin-bottom:1.25rem; }
+
+.modal-injury-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.25);
+    border-radius: 6px;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.85rem;
+    color: #f87171;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.modal-row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+}
+.modal-row:last-of-type { border-bottom: none; }
+.modal-row-icon { flex-shrink:0; width:20px; text-align:center; font-size:0.95rem; margin-top:1px; }
+.modal-row-label { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px; }
+.modal-row-value { color:var(--text); line-height:1.4; }
+
+.modal-notes {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size:0.82rem;
+    color:var(--muted);
+    line-height:1.5;
+    margin-top:0.75rem;
+    border-left: 3px solid rgba(245,158,11,0.5);
+}
+.modal-notes strong { color:var(--text); display:block; margin-bottom:4px; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.4px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+    .cards-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 700px) {
+    .stats-bar { grid-template-columns: repeat(2, 1fr) !important; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .page-header > div:last-child { width: 100%; display: flex; gap: 0.5rem; }
+    .page-header > div:last-child a { flex: 1; text-align: center; }
+    .filter-tabs { gap: 0.3rem; flex-wrap: wrap; }
+    .filter-tab { font-size: 0.75rem; padding: 0.3rem 0.65rem; }
+}
+@media (max-width: 500px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: repeat(3, 1fr) !important; }
+    .card-name { font-size: 1rem; }
+}
+
+{% endblock %}
+
+{% block content %}
+
+<div class="modal-backdrop" id="person-modal" onclick="closeModalOutside(event)">
+    <div class="modal-box" id="modal-box">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div id="modal-content"></div>
+    </div>
+</div>
+<div class="page-header">
+    <div class="page-header-left">
+        <h2><i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:1.5rem;"></i> Injured Persons</h2>
+        <p>All reported injuries — updated in real time from field responders.</p>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+        <a href="{% url 'view_missing' %}" class="btn btn-outline"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i> View Missing</a>
+        <a href="{% url 'report_injured' %}" class="btn btn-outline">+ Report Injury</a>
+    </div>
+</div>
+
+<!-- Stats -->
+{% if injured %}
+<div class="stats-bar">
+    <div class="stat-box">
+        <div class="stat-num red">{{ count_critical }}</div>
+        <div class="stat-label">Critical</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-num yellow">{{ count_moderate }}</div>
+        <div class="stat-label">Moderate</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-num green">{{ count_minor }}</div>
+        <div class="stat-label">Minor</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <button class="filter-btn active" onclick="filterCards('all', this)">All</button>
+    <button class="filter-btn critical" onclick="filterCards('Critical', this)"> Critical</button>
+    <button class="filter-btn moderate" onclick="filterCards('Moderate', this)"> Moderate</button>
+    <button class="filter-btn minor"    onclick="filterCards('Minor', this)"> Minor</button>
+    <span class="filter-count" id="filter-count">{{ injured|length }} records</span>
+</div>
+
+<!-- Cards -->
+<div class="cards-grid" id="cards-grid">
+    {% for p in injured %}
+    <div class="person-card severity-{{ p.severity }}" data-severity="{{ p.severity }}"
+         onclick="openInjuredModal(this)" style="cursor:pointer;"
+         data-pk="{{ p.pk }}"
+         data-fullname="{{ p.name }}"
+         data-age="{{ p.age }}"
+         data-gender="{{ p.gender }}"
+         data-location="{{ p.location }}"
+         data-injury="{{ p.injury_type }}"
+         data-description="{{ p.description|default:''|escapejs }}"
+         data-reported="{{ p.reported_at|date:'d M Y, H:i' }}"
+         data-status="{{ p.status }}"
+         data-status-changed="{% if p.status_changed_at %}{{ p.status_changed_at|date:'d M Y, H:i' }}{% endif %}"
+         data-status-note="{{ p.status_note|default:''|escapejs }}"
+         data-photo="{% if p.photo %}{{ p.photo.url }}{% endif %}">
+
+        {% if p.photo %}
+            <img class="card-photo" src="{{ p.photo.url }}" alt="{{ p.name }}">
+        {% else %}
+            <div class="card-photo-placeholder"><i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:1.1rem;"></i></div>
+        {% endif %}
+
+        <div class="card-body">
+            <div class="card-top">
+                <div>
+                    <div class="card-name">{{ p.name }}</div>
+                    <div class="card-meta">{{ p.age }} yrs · {{ p.gender }}</div>
+                </div>
+                <span class="severity-badge {{ p.severity }}">{{ p.severity }}</span>
+            </div>
+
+            <div class="card-detail">
+                <span class="detail-icon"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.0rem;"></i></span>
+                <span>{{ p.location }}</span>
+            </div>
+
+            <div class="card-detail">
+                <span class="detail-icon"><i class="bi bi-clipboard-plus-fill" style="color:#f87171;font-size:1.0rem;"></i></span>
+                <span>{{ p.injury_type }}</span>
+            </div>
+
+            {% if p.status_changed_at %}
+            <div class="card-detail">
+                <span class="detail-icon"><i class="bi bi-bookmark-star-fill" style="color:#94a3b8;font-size:1.0rem;"></i></span>
+                <span style="color:{% if p.status == 'Discharged' %}#4ade80{% elif p.status == 'Recovering' %}#fbbf24{% else %}var(--muted){% endif %};">
+                    {{ p.status }} on {{ p.status_changed_at|date:"d M Y" }}
+                </span>
+            </div>
+            {% endif %}
+
+            {% if p.description %}
+            <div class="card-injury">
+                <strong>Notes:</strong> {{ p.description|truncatechars:120 }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer">
+            <span class="card-time"><i class="bi bi-clock-history" style="color:#94a3b8;font-size:0.8rem;"></i> {{ p.reported_at|timesince }} ago</span>
+            {% if user.is_authenticated %}
+            <button class="status-update-btn status-inj-{{ p.status }}"
+                    onclick="event.stopPropagation(); openStatusModal('injured', {{ p.pk }}, '{{ p.name|escapejs }}', '{{ p.status }}')"
+                    title="Update status">
+                {% if p.status == 'Active' %}<i class="bi bi-circle-fill" style="color:#f59e0b;font-size:0.8rem;"></i> Active
+                {% elif p.status == 'Recovering' %}<i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:0.8rem;"></i> Recovering
+                {% else %}✓ Discharged{% endif %}
+            </button>
+            {% else %}
+            <span class="status-dot {% if p.status == 'Active' %}active{% elif p.status == 'Recovering' %}recovering{% elif p.status == 'Discharged' %}discharged{% endif %}">
+                {{ p.status }}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-circle-fill" style="color:#4ade80;font-size:0.8rem;"></i></div>
+        <h3>No injuries reported</h3>
+        <p>No injured persons have been reported in this area yet.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% include "pagination.html" with page_obj=page_obj %}
+
+<!-- Status Update Modal -->
+<div class="status-modal-backdrop" id="status-modal-backdrop" onclick="closeStatusModal(event)">
+    <div class="status-modal" onclick="event.stopPropagation()">
+        <div class="status-modal-title" id="smodal-title">Update Status</div>
+        <div class="status-modal-sub" id="smodal-sub">Select new status</div>
+        <form method="post" id="status-update-form">
+            {% csrf_token %}
+            <div class="status-options">
+                <label class="status-option" id="opt-Active">
+                    <input type="radio" name="status" value="Active">
+                    <div>
+                        <div class="status-option-label" style="color:#f87171;"><i class="bi bi-circle-fill" style="color:#f59e0b;font-size:0.8rem;"></i> Active</div>
+                        <div class="status-option-desc">Receiving treatment, critical care</div>
+                    </div>
+                </label>
+                <label class="status-option" id="opt-Recovering">
+                    <input type="radio" name="status" value="Recovering">
+                    <div>
+                        <div class="status-option-label" style="color:#fbbf24;"><i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:0.8rem;"></i> Recovering</div>
+                        <div class="status-option-desc">Stable, progressing well</div>
+                    </div>
+                </label>
+                <label class="status-option" id="opt-Discharged">
+                    <input type="radio" name="status" value="Discharged">
+                    <div>
+                        <div class="status-option-label" style="color:#4ade80;"><i class="bi bi-circle-fill" style="color:#4ade80;font-size:0.8rem;"></i> Discharged</div>
+                        <div class="status-option-desc">Released from medical care</div>
+                    </div>
+                </label>
+            </div>
+            <textarea class="status-modal-note" name="status_note" placeholder="Optional note (e.g. discharged from SCB Medical, recovering at home)…"></textarea>
+            <div class="status-modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeStatusModal()">Cancel</button>
+                <button type="submit" class="btn-save">Save Status</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+function openInjuredModal(card) {
+    const name        = card.dataset.fullname;
+    const age         = card.dataset.age;
+    const gender      = card.dataset.gender;
+    const location    = card.dataset.location;
+    const injury      = card.dataset.injury;
+    const description = card.dataset.description;
+    const reported    = card.dataset.reported;
+    const photo       = card.dataset.photo;
+    const severity    = card.dataset.severity;
+    const status      = card.dataset.status;
+    const pk          = card.dataset.pk;
+
+    const sevIcon = severity === 'Critical' ? '▲' : severity === 'Moderate' ? '◆' : '✓';
+
+    let photoHTML = photo
+        ? `<img class="modal-photo" src="${photo}" alt="${name}">`
+        : `<div class="modal-photo-placeholder"><i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:1.1rem;"></i></div>`;
+
+    let statusDotClass = status === 'Active' ? 'active' : status === 'Recovering' ? 'recovering' : 'discharged';
+
+    document.getElementById('modal-content').innerHTML = `
+        ${photoHTML}
+        <div class="modal-severity-bar">
+            <span class="modal-sev-badge ${severity}">${sevIcon} ${severity}</span>
+            <span class="modal-id">#${String(pk).padStart(5,'0')}</span>
+        </div>
+        <div class="modal-body">
+            <div class="modal-name">${name}</div>
+            <div class="modal-meta">${age} years old &nbsp;·&nbsp; ${gender}</div>
+
+            <div class="modal-injury-tag"><i class="bi bi-clipboard-plus-fill" style="color:#f87171;font-size:1rem;"></i> ${injury}</div>
+
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1rem;"></i></span>
+                <div><div class="modal-row-label">Location</div><div class="modal-row-value">${location}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-circle-fill" style="color:#f59e0b;font-size:1rem;"></i></span>
+                <div><div class="modal-row-label">Severity</div><div class="modal-row-value">${severity}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-bar-chart-fill" style="color:#60a5fa;font-size:1rem;"></i></span>
+                <div><div class="modal-row-label">Status</div><div class="modal-row-value">${status}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-clock-history" style="color:#94a3b8;font-size:1rem;"></i></span>
+                <div><div class="modal-row-label">Reported On</div><div class="modal-row-value">${reported}</div></div>
+            </div>
+
+            ${description ? `<div class="modal-notes"><strong>Clinical Notes</strong>${description}</div>` : ''}
+        </div>
+    `;
+
+    document.getElementById('person-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('person-modal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+    if (e.target.id === 'person-modal') closeModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function filterCards(severity, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const cards = document.querySelectorAll('.person-card');
+    let visible = 0;
+
+    cards.forEach(card => {
+        if (severity === 'all' || card.dataset.severity === severity) {
+            card.style.display = '';
+            visible++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    document.getElementById('filter-count').textContent = visible + ' record' + (visible !== 1 ? 's' : '');
+}
+
+// ── Status Update Modal ──
+function openStatusModal(type, pk, name, currentStatus) {
+    document.getElementById('smodal-title').textContent = 'Update: ' + name;
+    document.getElementById('smodal-sub').textContent   = 'Current status: ' + currentStatus;
+
+    const form = document.getElementById('status-update-form');
+    form.action = '/' + type + '/' + pk + '/update-status/';
+
+    document.querySelectorAll('.status-option').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.status-option input[type=radio]').forEach(r => {
+        r.checked = (r.value === currentStatus);
+        if (r.checked) r.closest('.status-option').classList.add('selected');
+    });
+
+    document.querySelector('.status-modal-note').value = '';
+    document.getElementById('status-modal-backdrop').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeStatusModal(e) {
+    if (e && e.target !== document.getElementById('status-modal-backdrop')) return;
+    document.getElementById('status-modal-backdrop').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+document.querySelectorAll('.status-option input[type=radio]').forEach(r => {
+    r.addEventListener('change', function() {
+        document.querySelectorAll('.status-option').forEach(el => el.classList.remove('selected'));
+        this.closest('.status-option').classList.add('selected');
+    });
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeStatusModal({ target: document.getElementById('status-modal-backdrop') });
+});
+</script>
+{% endblock %}

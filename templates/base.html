@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DisasterNet{% endblock %} | Crowd-Source Disaster Management</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#0d1117">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DisasterNet">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <meta property="og:type"        content="website">
+    <meta property="og:site_name"   content="DisasterNet">
+    <meta property="og:title"       content="{% block og_title %}DisasterNet — Crowd-Source Disaster Management{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Real-time disaster reports, missing persons, and emergency coordination for India.{% endblock %}">
+    <meta property="og:image"       content="{% block og_image %}/static/icons/icon-512.png{% endblock %}">
+    <meta property="og:url"         content="{{ request.build_absolute_uri }}">
+    <meta name="twitter:card"       content="summary_large_image">
+    <meta name="twitter:title"      content="{% block tw_title %}DisasterNet{% endblock %}">
+    <meta name="twitter:description" content="{% block tw_description %}Real-time disaster crowd-sourcing platform.{% endblock %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        @media (max-width: 600px) {
+            .modal-box { border-radius: 10px 10px 0 0; max-height: 95vh; }
+            .modal-backdrop { align-items: flex-end; padding: 0; }
+            .modal-photo { height: 180px; }
+            .modal-photo-placeholder { height: 130px; }
+            .modal-name { font-size: 1.2rem; }
+            .modal-body { padding: 1rem; }
+        }
+        @media (max-width: 480px) {
+            .btn { font-size: 0.82rem; padding: 0.5rem 1rem; }
+            .btn-primary { font-size: 0.82rem; }
+        }
+
+        .leaflet-pane,
+        .leaflet-top,
+        .leaflet-bottom { z-index: 1 !important; }
+        .leaflet-control  { z-index: 2 !important; }
+        .leaflet-popup    { z-index: 3 !important; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:        #0b0e14;
+            --surface:   #131720;
+            --surface2:  #1a2030;
+            --border:    rgba(255,255,255,0.07);
+            --accent:    #e83b3b;
+            --accent2:   #ff6b35;
+            --text:      #e8eaf0;
+            --muted:     #6b7280;
+            --warning:   #f59e0b;
+            --safe:      #22c55e;
+            --info:      #3b82f6;
+            --font-head: 'Rajdhani', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --radius:    10px;
+            --shadow:    0 4px 24px rgba(0,0,0,0.4);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { overflow-x: hidden; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            width: 100%;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        nav {
+            background: rgba(11,14,20,0.97);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 0 1.25rem;
+            width: 100%;
+        }
+
+        .nav-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            gap: 0.5rem;
+            min-width: 0;
+            width: 100%;
+            overflow: visible;
+        }
+
+        .nav-brand {
+            font-family: var(--font-head);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            text-decoration: none;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: visible;
+        }
+
+        .nav-brand .dot {
+            width: 10px; height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: blink 2s infinite;
+            flex-shrink: 0;
+            overflow: visible;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(1.5); }
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.1rem;
+            list-style: none;
+            flex: 1;
+            justify-content: flex-end;
+            margin-right: 0.5rem;
+            min-width: 0;
+            overflow: visible;
+        }
+
+        .nav-links a {
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--muted);
+            transition: all 0.18s;
+            letter-spacing: 0.1px;
+            white-space: nowrap;
+            position: relative;
+            text-decoration: none;
+        }
+        .nav-links a:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.06);
+        }
+
+        /* Active page indicator */
+        .nav-links a.active {
+            color: var(--text);
+            background: rgba(232,59,59,0.12);
+        }
+        .nav-links a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .nav-dropdown {
+            position: relative;
+        }
+        .nav-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .nav-dropdown-toggle .chevron {
+            font-size: 0.6rem;
+            transition: transform 0.2s;
+            opacity: 0.6;
+        }
+        .nav-dropdown.open .chevron,
+        .nav-dropdown:focus-within .chevron { transform: rotate(180deg); }
+
+        .nav-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            min-width: 200px;
+            padding: 0.4rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.18s, visibility 0.18s, top 0.18s;
+            pointer-events: none;
+            z-index: 1100;
+        }
+        .nav-dropdown-menu::after {
+            content: '';
+            position: absolute;
+            top: -16px;
+            left: 0;
+            right: 0;
+            height: 16px;
+        }
+        .nav-dropdown-menu::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            width: 10px; height: 10px;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            border-top: 1px solid var(--border);
+            transform: translateX(-50%) rotate(45deg);
+        }
+
+        .nav-dropdown.open .nav-dropdown-menu,
+        .nav-dropdown:focus-within .nav-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+
+        .nav-dropdown-menu a {
+            display: flex !important;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.55rem 0.85rem !important;
+            border-radius: 6px;
+            font-size: 0.83rem !important;
+            color: var(--muted) !important;
+            width: 100%;
+            box-sizing: border-box;
+            background: transparent !important;
+        }
+        .nav-dropdown-menu a:hover {
+            background: rgba(255,255,255,0.06) !important;
+            color: var(--text) !important;
+        }
+        .nav-dropdown-menu a.active {
+            background: rgba(232,59,59,0.1) !important;
+            color: var(--text) !important;
+        }
+        .nav-dropdown-menu a.active::after { display: none; }
+        .drop-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+        .drop-label { flex: 1; }
+        .drop-badge {
+            font-size: 0.65rem;
+            padding: 1px 6px;
+            border-radius: 10px;
+            background: rgba(232,59,59,0.2);
+            color: #f87171;
+            font-weight: 600;
+        }
+
+        .nav-dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0.3rem 0.5rem;
+        }
+
+        .nav-sos {
+            background: var(--accent);
+            color: white !important;
+            padding: 0.4rem 0.65rem !important;
+            border-radius: 6px;
+            font-weight: 600 !important;
+            font-size: 0.78rem !important;
+            animation: sos-pulse 2.5s infinite;
+            flex-shrink: 0;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .nav-sos:hover {
+            background: #c0392b !important;
+            color: white !important;
+        }
+        .nav-sos.active::after { display: none; }
+
+        @keyframes sos-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(232,59,59,0.5); }
+            50%       { box-shadow: 0 0 0 7px rgba(232,59,59,0); }
+        }
+
+        .nav-hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 4px;
+            background: none;
+            border: none;
+        }
+        .nav-hamburger span {
+            display: block;
+            width: 22px; height: 2px;
+            background: var(--muted);
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .nav-mobile-only { display: none !important; }
+        @media (max-width: 1100px) {
+            .nav-desktop-only { display: none !important; }
+            .nav-mobile-only  { display: flex !important; }
+            .nav-links { display: none; flex-direction: column; align-items: stretch; }
+            .nav-links.open {
+                display: flex;
+                position: fixed;
+                top: 64px; left: 0; right: 0;
+                background: #0b0e14;
+                border-bottom: 1px solid var(--border);
+                padding: 0.5rem 0 1.5rem;
+                gap: 0;
+                z-index: 199;
+                width: 100%;
+                overflow-y: auto;
+                max-height: calc(100vh - 64px);
+            }
+            .nav-drawer-section {
+                font-size: 0.62rem !important;
+                font-weight: 700 !important;
+                letter-spacing: 1.8px !important;
+                text-transform: uppercase !important;
+                color: var(--muted) !important;
+                padding: 1rem 1.25rem 0.4rem !important;
+                list-style: none !important;
+                pointer-events: none !important;
+                border-top: 1px solid var(--border);
+                margin-top: 0.25rem;
+            }
+            .nav-drawer-section:first-of-type { border-top: none; margin-top: 0; }
+            .nav-drawer-link {
+                display: flex !important;
+                align-items: center !important;
+                gap: 0.85rem !important;
+                padding: 0.8rem 1.25rem !important;
+                font-size: 0.97rem !important;
+                font-weight: 500 !important;
+                color: var(--muted) !important;
+                border-radius: 0 !important;
+                text-decoration: none !important;
+                transition: background 0.12s, color 0.12s !important;
+                width: 100% !important;
+                border-left: 3px solid transparent !important;
+            }
+            .nav-drawer-link:hover {
+                background: rgba(255,255,255,0.04) !important;
+                color: var(--text) !important;
+            }
+            .nav-drawer-link.active {
+                color: var(--text) !important;
+                background: rgba(232,59,59,0.07) !important;
+                border-left-color: var(--accent) !important;
+            }
+            .nav-hamburger { display: flex; }
+            nav { position: sticky; }
+            .nav-brand { font-size: 1.25rem; }
+            .nav-user-name { display: none; }
+        }
+
+        @media (max-width: 480px) {
+            nav { padding: 0 0.75rem; }
+            main { padding: 1rem 0.75rem; }
+            .messages-wrap { padding: 0 0.75rem; }
+            .footer-inner { padding: 1.5rem 0.75rem 1rem; }
+            #emergency-fab { bottom: 1rem; right: 1rem; width: 48px; height: 48px; }
+            #feedback-fab  { bottom: 8rem; right: 1rem; }
+            #lang-fab      { bottom: 5.25rem; right: 1rem; }
+            #lang-fab-menu { right: 3.5rem; }
+            #emergency-panel {
+                right: 1rem;
+                max-width: calc(100vw - 2rem);
+            }
+            .nav-brand .dot { width: 8px; height: 8px; }
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(232,59,59,0.4); }
+            50%       { box-shadow: 0 0 0 6px rgba(232,59,59,0); }
+        }
+
+        .messages-wrap {
+            max-width: 1280px;
+            margin: 1rem auto 0;
+            padding: 0 1.25rem;
+            width: 100%;
+        }
+
+        .msg {
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            border-left: 4px solid;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg.success { background: rgba(34,197,94,0.1);  border-color: var(--safe);    color: #86efac; }
+        .msg.error   { background: rgba(239,68,68,0.1);  border-color: var(--accent);  color: #fca5a5; }
+        .msg.warning { background: rgba(245,158,11,0.1); border-color: var(--warning); color: #fcd34d; }
+        .msg.info    { background: rgba(59,130,246,0.1); border-color: var(--info);    color: #93c5fd; }
+
+        main {
+            flex: 1;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1.5rem 1.25rem;
+            width: 100%;
+            min-width: 0;
+        }
+        body.page-heatmap {
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+        }
+        body.page-heatmap main {
+            max-width: 100%;
+            padding: 0;
+            flex: 1 1 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        body.page-heatmap footer,
+        body.page-heatmap #pwa-banner { display: none !important; }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-family: var(--font-head);
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .section-title .badge {
+            font-size: 0.7rem;
+            font-family: var(--font-body);
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: var(--surface2);
+            color: var(--muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.55rem 1rem;
+            border-radius: 7px;
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-decoration: none;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #c0392b; transform: translateY(-1px); }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+        .btn-outline:hover { color: var(--text); border-color: rgba(255,255,255,0.2); background: var(--surface2); }
+
+
+body.lang-hi, body.lang-or { font-family: 'Noto Sans Devanagari', 'Noto Sans Oriya', sans-serif; }
+
+        footer {
+            border-top: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--muted);
+            font-size: 0.8rem;
+        }
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem 1.25rem;
+        }
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 1.75rem;
+        }
+        @media (max-width: 768px) {
+            .footer-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+        }
+        .footer-brand-name {
+            font-family: var(--font-head);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+            display: flex; align-items: center; gap: 0.4rem;
+            margin-bottom: 0.5rem;
+        }
+        .footer-brand-tagline {
+            font-size: 0.75rem;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+        .footer-emergency {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.6rem;
+        }
+        .footer-sos-pill {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            white-space: nowrap;
+        }
+        .footer-sos-pill.police    { background:rgba(96,165,250,0.12); color:#93c5fd; border:1px solid rgba(96,165,250,0.2); }
+        .footer-sos-pill.fire      { background:rgba(248,113,113,0.12); color:#fca5a5; border:1px solid rgba(248,113,113,0.2); }
+        .footer-sos-pill.ambulance { background:rgba(74,222,128,0.12); color:#86efac; border:1px solid rgba(74,222,128,0.2); }
+        .footer-col-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--muted);
+            margin-bottom: 0.85rem;
+        }
+        .footer-links { display: flex; flex-direction: column; gap: 0.45rem; }
+        .footer-links a {
+            font-size: 0.78rem; color: var(--muted);
+            text-decoration: none; transition: color 0.15s;
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .footer-links a:hover { color: var(--text); }
+        .footer-credit-card {
+            background: rgba(255,255,255,0.025);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+        }
+        .footer-credit-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 0.6rem;
+        }
+        .footer-dev-list {
+            display: flex; flex-direction: column; gap: 0.3rem;
+            margin-bottom: 0.75rem;
+        }
+        .footer-dev-item {
+            font-size: 0.78rem; color: var(--text);
+            font-weight: 500; display: flex; align-items: center; gap: 0.4rem;
+        }
+        .footer-dev-item::before {
+            content: ''; display: inline-block;
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--accent); flex-shrink: 0;
+        }
+        .footer-fulfillment {
+            font-size: 0.68rem; color: var(--muted);
+            line-height: 1.6;
+            border-top: 1px solid var(--border);
+            padding-top: 0.6rem; margin-top: 0.4rem;
+        }
+        .footer-fulfillment strong { color: var(--text); }
+        .footer-bottom {
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 0.75rem;
+        }
+        .footer-bottom-left {
+            font-size: 0.72rem; color: var(--muted);
+            display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+        }
+        .footer-bottom-right {
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .footer-bottom-right a {
+            font-size: 0.72rem; color: var(--muted);
+            text-decoration: none; transition: color 0.15s;
+            display: flex; align-items: center; gap: 0.3rem;
+        }
+        .footer-bottom-right a:hover { color: var(--text); }
+        .footer-version {
+            font-size: 0.65rem; padding: 2px 8px;
+            border-radius: 10px; background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border); color: var(--muted);
+        }
+        .footer-gh-icon { width: 14px; height: 14px; fill: currentColor; }
+
+        #emergency-fab {
+            position: fixed;
+            bottom: 1.25rem;
+            right: 1.25rem;
+            width: 52px; height: 52px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            cursor: pointer;
+            z-index: 500;
+            box-shadow: 0 4px 20px rgba(232,59,59,0.5);
+            animation: pulse-border 2s infinite;
+            transition: transform 0.2s;
+        }
+        #emergency-fab:hover { transform: scale(1.1); }
+
+        #emergency-panel {
+            position: fixed;
+            bottom: 5.25rem;
+            right: 4.25rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem;
+            min-width: 200px;
+            max-width: calc(100vw - 2.5rem);
+            z-index: 500;
+            box-shadow: var(--shadow);
+            display: none;
+            animation: slideIn 0.2s ease;
+        }
+
+        #emergency-panel h4 {
+            font-family: var(--font-head);
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .emergency-btn-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .emergency-btn-row button {
+            padding: 0.6rem 1rem;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text);
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        .emergency-btn-row button:hover { background: var(--accent); border-color: var(--accent); }
+
+        .text-muted   { color: var(--muted); }
+        .text-accent  { color: var(--accent); }
+        .text-safe    { color: var(--safe); }
+        .text-warning { color: var(--warning); }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .nav-auth { display:flex; align-items:center; gap:0.35rem; flex-shrink:0; white-space:nowrap; }
+        .nav-auth-link {
+            font-size:0.78rem; color:var(--muted); text-decoration:none;
+            padding:0.3rem 0.65rem; border-radius:6px; border:1px solid transparent;
+            transition:all 0.15s;
+        }
+        .nav-auth-link:hover { color:var(--text); border-color:var(--border); }
+        .nav-auth-link.register {
+            border-color:var(--accent); color:var(--accent); font-weight:600;
+        }
+        .nav-auth-link.register:hover { background:var(--accent); color:#fff; }
+
+        .nav-user-dropdown {
+            position: relative;
+        }
+        .nav-user-btn {
+            display: flex; align-items: center; gap: 0.45rem;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 20px; padding: 0.25rem 0.6rem 0.25rem 0.3rem;
+            cursor: pointer; color: var(--muted); font-size: 0.78rem;
+            font-family: var(--font-body); transition: border-color 0.15s, color 0.15s;
+        }
+        .nav-user-btn:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+        .nav-user-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: linear-gradient(135deg,#e83b3b,#7c3aed);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0;
+        }
+        .nav-user-name {
+            max-width: 90px; overflow: hidden;
+            text-overflow: ellipsis; white-space: nowrap;
+        }
+        .nav-user-chevron {
+            font-size: 0.55rem; opacity: 0.5;
+            transition: transform 0.2s; margin-left: 1px;
+        }
+        .nav-user-dropdown.open .nav-user-chevron { transform: rotate(180deg); }
+
+        .nav-user-menu {
+            position: fixed; top: 64px; right: 1.25rem;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; min-width: 190px; padding: 0.35rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            opacity: 0; visibility: hidden; pointer-events: none;
+            transition: opacity 0.18s, visibility 0.18s;
+            z-index: 9999;
+        }
+        .nav-user-menu::before {
+            content: ''; position: absolute;
+            top: -6px; right: 16px;
+            width: 10px; height: 10px;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            border-top: 1px solid var(--border);
+            transform: rotate(45deg);
+        }
+        .nav-user-dropdown.open .nav-user-menu {
+            opacity: 1; visibility: visible; pointer-events: all;
+        }
+        .nav-user-menu-header {
+            padding: 0.5rem 0.75rem 0.4rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 0.3rem;
+        }
+        .nav-user-menu-name {
+            font-size: 0.83rem; font-weight: 600; color: var(--text);
+        }
+        .nav-user-menu-sub {
+            font-size: 0.68rem; color: var(--muted); margin-top: 1px;
+        }
+        .nav-user-menu a, .nav-user-menu-logout {
+            display: flex; align-items: center; gap: 0.55rem;
+            padding: 0.45rem 0.7rem; border-radius: 7px;
+            font-size: 0.81rem; color: var(--muted);
+            text-decoration: none; transition: all 0.15s;
+            width: 100%; box-sizing: border-box; background: none;
+            border: none; cursor: pointer; font-family: var(--font-body);
+            text-align: left;
+        }
+        .nav-user-menu a:hover, .nav-user-menu-logout:hover {
+            background: rgba(255,255,255,0.06); color: var(--text);
+        }
+        .nav-user-menu-logout { color: #f87171; }
+        .nav-user-menu-logout:hover { background: rgba(248,113,113,0.08); color: #f87171; }
+        .nav-user-menu-divider {
+            height: 1px; background: var(--border); margin: 0.3rem 0.4rem;
+        }
+
+        #pwa-banner {
+            display:none; position:fixed; bottom:1rem; left:50%;
+            transform:translateX(-50%); z-index:9000;
+            background:var(--surface2); border:1px solid var(--border);
+            border-radius:12px; padding:0.75rem 1.1rem;
+            box-shadow:0 8px 32px rgba(0,0,0,0.5);
+            align-items:center; gap:0.75rem; max-width:360px; width:90%;
+        }
+        #pwa-banner.show { display:flex; animation:slideUp 0.3s ease; }
+        @keyframes slideUp {
+            from { opacity:0; transform:translateX(-50%) translateY(16px); }
+            to   { opacity:1; transform:translateX(-50%) translateY(0); }
+        }
+        .pwa-banner-icon { font-size:1.6rem; flex-shrink:0; }
+        .pwa-banner-text { flex:1; min-width:0; }
+        .pwa-banner-title { font-size:0.82rem; font-weight:600; color:var(--text); }
+        .pwa-banner-sub   { font-size:0.7rem; color:var(--muted); }
+        .pwa-install-btn  {
+            background:var(--accent); border:none; border-radius:7px;
+            color:#fff; font-size:0.76rem; font-weight:600;
+            padding:0.4rem 0.8rem; cursor:pointer; white-space:nowrap;
+            transition:background 0.15s;
+        }
+        .pwa-install-btn:hover { background:#c0392b; }
+        .pwa-dismiss-btn {
+            background:transparent; border:none; color:var(--muted);
+            font-size:1rem; cursor:pointer; padding:0 0.2rem; line-height:1;
+            flex-shrink:0;
+        }
+
+        .pagination {
+            display:flex; align-items:center; justify-content:center;
+            gap:0.3rem; margin:1.5rem 0 0.5rem; flex-wrap:wrap;
+        }
+        .page-btn {
+            min-width:34px; height:34px; padding:0 0.6rem;
+            border-radius:7px; border:1px solid var(--border);
+            background:var(--surface2); color:var(--muted);
+            font-size:0.8rem; cursor:pointer; display:inline-flex;
+            align-items:center; justify-content:center;
+            text-decoration:none; transition:all 0.15s;
+        }
+        .page-btn:hover { border-color:rgba(255,255,255,0.2); color:var(--text); }
+        .page-btn.active {
+            background:var(--accent); border-color:var(--accent);
+            color:#fff; font-weight:700; pointer-events:none;
+        }
+        .page-btn.disabled { opacity:0.3; pointer-events:none; }
+        .page-info { font-size:0.75rem; color:var(--muted); padding:0 0.5rem; }
+
+        .share-bar {
+            display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;
+            padding:0.7rem 1.25rem; border-top:1px solid var(--border);
+            background:var(--surface2);
+        }
+        .share-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-right:0.2rem; }
+        .share-btn {
+            display:inline-flex; align-items:center; gap:0.35rem;
+            padding:0.3rem 0.7rem; border-radius:6px; border:1px solid var(--border);
+            background:var(--surface); font-size:0.75rem; color:var(--muted);
+            text-decoration:none; cursor:pointer; transition:all 0.15s;
+        }
+        .share-btn:hover { color:var(--text); border-color:rgba(255,255,255,0.2); }
+        .share-btn.whatsapp:hover { border-color:#25d366; color:#25d366; }
+        .share-btn.twitter:hover  { border-color:#1da1f2; color:#1da1f2; }
+        .share-btn.copy:hover     { border-color:var(--accent); color:var(--accent); }
+        .share-btn.copied         { border-color:#4ade80; color:#4ade80; }
+
+        #toast {
+            position:fixed; bottom:5rem; left:50%; transform:translateX(-50%);
+            background:var(--surface2); border:1px solid var(--border);
+            border-radius:8px; padding:0.5rem 1.1rem; font-size:0.8rem;
+            color:var(--text); z-index:9999; pointer-events:none;
+            opacity:0; transition:opacity 0.25s; white-space:nowrap;
+        }
+        #toast.show { opacity:1; }
+
+        #feedback-fab {
+            position:fixed; bottom:8.75rem; right:1.25rem;
+            width:40px; height:40px; border-radius:50%;
+            background:var(--surface2); border:1px solid var(--border);
+            color:var(--muted); font-size:1rem; cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            z-index:8998; transition:all 0.2s; text-decoration:none;
+            box-shadow:0 2px 12px rgba(0,0,0,0.4);
+        }
+        #feedback-fab:hover { border-color:var(--accent); color:var(--accent); background:var(--surface); }
+
+        #lang-fab {
+            position:fixed; bottom:5.75rem; right:1.25rem;
+            width:40px; height:40px; border-radius:50%;
+            background:var(--surface2); border:1px solid var(--border);
+            color:var(--muted); font-size:0.65rem; font-weight:700;
+            cursor:pointer; display:flex; align-items:center; justify-content:center;
+            z-index:8998; transition:all 0.2s; font-family:var(--font-body);
+            box-shadow:0 2px 12px rgba(0,0,0,0.4); letter-spacing:0.3px;
+        }
+        #lang-fab:hover { border-color:rgba(255,255,255,0.25); color:var(--text); background:var(--surface); }
+
+        #lang-fab-menu {
+            position:fixed; bottom:5.75rem; right:4rem;
+            background:var(--surface); border:1px solid var(--border);
+            border-radius:10px; padding:0.3rem;
+            box-shadow:0 8px 28px rgba(0,0,0,0.5);
+            z-index:8999; display:none; flex-direction:column; gap:0.15rem;
+            min-width:110px;
+        }
+        #lang-fab-menu.open { display:flex; }
+        .lang-fab-opt {
+            display:flex; align-items:center; gap:0.5rem;
+            padding:0.4rem 0.65rem; border-radius:7px;
+            font-size:0.78rem; color:var(--muted); cursor:pointer;
+            border:none; background:transparent; width:100%; text-align:left;
+            font-family:var(--font-body); transition:all 0.15s;
+        }
+        .lang-fab-opt:hover { background:rgba(255,255,255,0.06); color:var(--text); }
+        .lang-fab-opt.active { color:var(--accent); background:rgba(232,59,59,0.08); }
+        .lang-fab-opt-flag { font-size:0.9rem; width:18px; text-align:center; }
+    </style>
+
+
+    <style>{% block extra_css %}{% endblock %}</style>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+<nav>
+    <div class="nav-inner">
+        <a href="{% url 'home' %}" class="nav-brand">
+            <div class="dot"></div>
+            DISASTER<span style="color:var(--accent)">NET</span>
+        </a>
+
+        <ul class="nav-links" id="nav-links">
+            <li class="nav-desktop-only">
+                <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+            </li>
+            <li class="nav-desktop-only">
+                <a href="{% url 'report_disaster' %}" class="{% if '/report/' in request.path and '/missing/' not in request.path and '/injured/' not in request.path %}active{% endif %}">Report Disaster</a>
+            </li>
+            <li class="nav-desktop-only nav-dropdown">
+                <a href="{% url 'view_disasters' %}" class="nav-dropdown-toggle {% if '/disasters/' in request.path or '/heatmap/' in request.path or '/missing/view/' in request.path or '/injured/view/' in request.path %}active{% endif %}" tabindex="0">
+                    View Reports <span class="chevron">▼</span>
+                </a>
+                <div class="nav-dropdown-menu">
+                    <a href="{% url 'view_disasters' %}" class="{% if '/disasters/' in request.path and '/heatmap' not in request.path %}active{% endif %}">
+                        <span class="drop-icon"><i class="bi bi-globe-americas" style="color:#a78bfa;font-size:1.1rem;"></i></span>
+                        <span class="drop-label">Disaster Reports</span>
+                    </a>
+                    <a href="{% url 'disaster_heatmap' %}" class="{% if '/heatmap/' in request.path %}active{% endif %}">
+                        <span class="drop-icon"><i class="bi bi-map-fill" style="color:#38bdf8;font-size:1.1rem;"></i></span>
+                        <span class="drop-label">Live Heatmap</span>
+                    </a>
+                    <a href="{% url 'view_missing' %}" class="{% if '/missing/view/' in request.path %}active{% endif %}">
+                        <span class="drop-icon"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i></span>
+                        <span class="drop-label">Missing Persons</span>
+                    </a>
+                    <a href="{% url 'view_injured' %}" class="{% if '/injured/view/' in request.path %}active{% endif %}">
+                        <span class="drop-icon"><i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:1.1rem;"></i></span>
+                        <span class="drop-label">Injured Persons</span>
+                    </a>
+                </div>
+            </li>
+            <li class="nav-desktop-only">
+                <a href="{% url 'report_missing' %}" class="{% if '/missing/report/' in request.path %}active{% endif %}">Missing Person</a>
+            </li>
+            <li class="nav-desktop-only">
+                <a href="{% url 'report_injured' %}" class="{% if '/injured/report/' in request.path %}active{% endif %}">Injured Person</a>
+            </li>
+            <li class="nav-desktop-only">
+                <a href="{% url 'donate' %}" class="{% if '/donate/' in request.path %}active{% endif %}">Donate</a>
+            </li>
+            {% if user.is_staff %}
+            <li class="nav-desktop-only">
+                <a href="{% url 'admin_dashboard' %}" class="{% if '/admin-dashboard/' in request.path %}active{% endif %}">Admin</a>
+            </li>
+            {% endif %}
+
+            <li class="nav-mobile-only nav-drawer-section">NAVIGATE</li>
+            <li class="nav-mobile-only">
+                <a href="/" class="nav-drawer-link {% if request.path == '/' %}active{% endif %}">
+                    <i class="bi bi-house-fill" style="color:currentColor;font-size:1.1rem;"></i>
+                    Home
+                </a>
+            </li>
+            <li class="nav-mobile-only">
+                <a href="{% url 'donate' %}" class="nav-drawer-link {% if '/donate/' in request.path %}active{% endif %}">
+                    <i class="bi bi-suit-heart-fill" style="color:currentColor;font-size:1.1rem;"></i>
+                    Donate
+                </a>
+            </li>
+
+            <li class="nav-mobile-only nav-drawer-section">REPORT</li>
+            <li class="nav-mobile-only">
+                <a href="{% url 'report_disaster' %}" class="nav-drawer-link {% if '/report/' in request.path and '/missing/' not in request.path and '/injured/' not in request.path %}active{% endif %}">
+                    <i class="bi bi-bell-fill" style="color:#f87171;font-size:1.1rem;"></i>
+                    Report Disaster
+                </a>
+            </li>
+            <li class="nav-mobile-only">
+                <a href="{% url 'report_missing' %}" class="nav-drawer-link {% if '/missing/report/' in request.path %}active{% endif %}">
+                    <i class="bi bi-person-fill" style="color:#94a3b8;font-size:1.1rem;"></i>
+                    Report Missing Person
+                </a>
+            </li>
+            <li class="nav-mobile-only">
+                <a href="{% url 'report_injured' %}" class="nav-drawer-link {% if '/injured/report/' in request.path %}active{% endif %}">
+                    <i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:1.1rem;"></i>
+                    Report Injured Person
+                </a>
+            </li>
+
+            <li class="nav-mobile-only nav-drawer-section">VIEW REPORTS</li>
+            <li class="nav-mobile-only">
+                <a href="{% url 'view_disasters' %}" class="nav-drawer-link {% if '/disasters/' in request.path and '/heatmap' not in request.path %}active{% endif %}">
+                    <i class="bi bi-globe-americas" style="color:#a78bfa;font-size:1.1rem;"></i>
+                    Disaster Reports
+                </a>
+            </li>
+            <li class="nav-mobile-only">
+                <a href="{% url 'disaster_heatmap' %}" class="nav-drawer-link {% if '/heatmap/' in request.path %}active{% endif %}">
+                    <i class="bi bi-map-fill" style="color:#38bdf8;font-size:1.1rem;"></i>
+                    Live Heatmap
+                </a>
+            </li>
+            <li class="nav-mobile-only">
+                <a href="{% url 'view_missing' %}" class="nav-drawer-link {% if '/missing/view/' in request.path %}active{% endif %}">
+                    <i class="bi bi-person-fill" style="color:#94a3b8;font-size:1.1rem;"></i>
+                    Missing Persons
+                </a>
+            </li>
+            <li class="nav-mobile-only">
+                <a href="{% url 'view_injured' %}" class="nav-drawer-link {% if '/injured/view/' in request.path %}active{% endif %}">
+                    <i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:1.1rem;"></i>
+                    Injured Persons
+                </a>
+            </li>
+
+            {% if user.is_staff %}
+            <li class="nav-mobile-only nav-drawer-section">ADMIN</li>
+            <li class="nav-mobile-only">
+                <a href="{% url 'admin_dashboard' %}" class="nav-drawer-link {% if '/admin-dashboard/' in request.path %}active{% endif %}">
+                    <i class="bi bi-gear-fill" style="color:#94a3b8;font-size:1.1rem;"></i>
+                    Admin Dashboard
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+
+        <div class="nav-right">
+        <a href="{% url 'report_disaster' %}" class="nav-sos"><i class="bi bi-exclamation-circle-fill" style="color:#fbbf24;font-size:1rem;"></i> SOS</a>
+
+        <!-- Auth -->
+        <div class="nav-auth">
+            {% if user.is_authenticated %}
+                <div class="nav-user-dropdown" id="nav-user-dd">
+                    <button class="nav-user-btn" onclick="toggleUserMenu()" aria-haspopup="true">
+                        <span class="nav-user-avatar">{{ user.username|first|upper }}</span>
+                        <span class="nav-user-name">{{ user.first_name|default:user.username }}</span>
+                        <span class="nav-user-chevron">▼</span>
+                    </button>
+                    <div class="nav-user-menu" id="nav-user-menu">
+                        <div class="nav-user-menu-header">
+                            <div class="nav-user-menu-name">{{ user.first_name|default:user.username }}</div>
+                            <div class="nav-user-menu-sub">@{{ user.username }}</div>
+                        </div>
+                        {% if user.is_staff %}
+                        <a href="{% url 'admin_dashboard' %}"><i class="bi bi-gear-fill" style="color:#94a3b8;font-size:1.1rem;"></i>&nbsp; Dashboard</a>
+                        {% endif %}
+                        <a href="{% url 'feedback' %}"><i class="bi bi-chat-left-text-fill" style="color:#a78bfa;font-size:1.1rem;"></i>&nbsp; Give Feedback</a>
+                        <div class="nav-user-menu-divider"></div>
+                        <a href="{% url 'auth_logout' %}" class="nav-user-menu-logout"><i class="bi bi-box-arrow-right" style="color:#f87171;font-size:1.1rem;"></i>&nbsp; Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'auth_login' %}?next={{ request.path }}" class="nav-auth-link">Login</a>
+                <a href="{% url 'auth_register' %}" class="nav-auth-link register">Register</a>
+            {% endif %}
+        </div>
+
+        <button class="nav-hamburger" id="hamburger" onclick="toggleNav()" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+        </div><!-- /.nav-right -->
+    </div>
+</nav>
+
+{% if messages %}
+<div class="messages-wrap">
+    {% for message in messages %}
+    <div class="msg {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- PAGE CONTENT -->
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+
+<!-- FOOTER -->
+<footer>
+<div class="footer-inner">
+
+    <!-- Top grid -->
+    <div class="footer-grid">
+
+        <!-- Brand + Emergency -->
+        <div>
+            <div class="footer-brand-name"><i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i> DisasterNet</div>
+            <p class="footer-brand-tagline">
+                A crowd-sourced disaster management platform for real-time reporting,
+                tracking missing &amp; injured persons, and coordinating community relief.
+            </p>
+            <div class="footer-col-title">Emergency Helplines</div>
+            <div class="footer-emergency">
+                <span class="footer-sos-pill police"><i class="bi bi-shield-fill-check" style="color:#93c5fd;font-size:1.1rem;"></i> Police · 100</span>
+                <span class="footer-sos-pill fire"><i class="bi bi-fire" style="color:#fb923c;font-size:1.1rem;"></i> Fire · 101</span>
+                <span class="footer-sos-pill ambulance"><i class="bi bi-asterisk" style="color:#86efac;font-size:1.1rem;"></i> Ambulance · 108</span>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div>
+            <div class="footer-col-title">Quick Links</div>
+            <div class="footer-links">
+                <a href="{% url 'home' %}"><i class="bi bi-house-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Home</a>
+                <a href="{% url 'report_disaster' %}"><i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i> Report a Disaster</a>
+                <a href="{% url 'view_missing' %}"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i> Missing Persons</a>
+                <a href="{% url 'view_injured' %}"><i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:1.1rem;"></i> Injured Persons</a>
+                <a href="{% url 'disaster_heatmap' %}"><i class="bi bi-map-fill" style="color:#38bdf8;font-size:1.1rem;"></i> Live Heatmap</a>
+                <a href="{% url 'donate' %}"><i class="bi bi-suit-heart-fill" style="color:#f87171;font-size:1.1rem;"></i> Donate</a>
+                <a href="{% url 'feedback' %}"><i class="bi bi-chat-left-text-fill" style="color:#a78bfa;font-size:1.1rem;"></i> Feedback</a>
+            </div>
+        </div>
+
+        <!-- Developed By -->
+        <div>
+            <div class="footer-credit-card">
+                <div class="footer-credit-title">Developed By</div>
+                <div class="footer-dev-list">
+                    <span class="footer-dev-item">Mohd Sharib</span>
+                    <span class="footer-dev-item">Sephali Chandrakar</span>
+                    <span class="footer-dev-item">Antaryami Swain</span>
+                </div>
+                <div class="footer-fulfillment">
+                    In <strong>Partial Fulfillment</strong> of the Requirements for the
+                    <strong>DSE – 4 Project</strong> of
+                    <strong>Bachelor of Science (B.Sc.) in Computer Science</strong>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="footer-bottom">
+        <div class="footer-bottom-left">
+            <span>© 2025 DisasterNet</span>
+            <span style="color:var(--border);">·</span>
+            <span>Crowd-Source Disaster Management</span>
+        </div>
+        <div class="footer-bottom-right">
+            <a href="https://github.com/knight-styles/disaster-net" target="_blank" rel="noopener">
+                <svg class="footer-gh-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+                </svg>
+                Source Code
+            </a>
+            <span style="color:var(--border);">·</span>
+            <span class="footer-version">v2.7.0</span>
+        </div>
+    </div>
+
+</div>
+</footer>
+
+<!-- FEEDBACK FAB -->
+<a href="{% url 'feedback' %}?next={{ request.path }}" id="feedback-fab" title="Give feedback / report issue"><i class="bi bi-chat-left-text-fill" style="color:#a78bfa;font-size:1.1rem;"></i></a>
+
+<!-- LANGUAGE FAB -->
+<button id="lang-fab" onclick="toggleLangMenu()" title="Change language">EN</button>
+<div id="lang-fab-menu">
+    <button class="lang-fab-opt active" id="lopt-en" onclick="setLangFab('en','EN',this)">
+        <span class="lang-fab-opt-flag">🇬🇧</span> English
+    </button>
+    <button class="lang-fab-opt" id="lopt-hi" onclick="setLangFab('hi','हि',this)">
+        <span class="lang-fab-opt-flag">🇮🇳</span> हिंदी
+    </button>
+    <button class="lang-fab-opt" id="lopt-or" onclick="setLangFab('or','ଓ',this)">
+        <span class="lang-fab-opt-flag" style="font-size:0.7rem;font-weight:700;color:#fb923c;">OD</span> ଓଡ଼ିଆ
+    </button>
+</div>
+
+<!-- PWA INSTALL BANNER -->
+<div id="pwa-banner">
+    <div class="pwa-banner-icon"><i class="bi bi-phone-fill" style="color:#60a5fa;font-size:1.1rem;"></i></div>
+    <div class="pwa-banner-text">
+        <div class="pwa-banner-title">Install DisasterNet</div>
+        <div class="pwa-banner-sub">Works offline · Fast access · No app store</div>
+    </div>
+    <button class="pwa-install-btn" id="pwa-install-btn">Install</button>
+    <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" title="Dismiss">✕</button>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- EMERGENCY FAB -->
+<div id="emergency-fab" onclick="toggleEmergency()" title="Emergency Services"><i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i></div>
+<div id="emergency-panel">
+    <h4>Emergency Services</h4>
+    <div class="emergency-btn-row">
+        <button onclick="callService('100')"><i class="bi bi-shield-fill-check" style="color:#93c5fd;font-size:1.1rem;"></i> Police — 100</button>
+        <button onclick="callService('101')"><i class="bi bi-fire" style="color:#fb923c;font-size:1.1rem;"></i> Fire — 101</button>
+        <button onclick="callService('108')"><i class="bi bi-asterisk" style="color:#86efac;font-size:1.1rem;"></i> Ambulance — 108</button>
+    </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    function toggleNav() {
+        const links = document.getElementById('nav-links');
+        const burger = document.getElementById('hamburger');
+        links.classList.toggle('open');
+        // Animate hamburger → X
+        const spans = burger.querySelectorAll('span');
+        if (links.classList.contains('open')) {
+            spans[0].style.transform = 'translateY(7px) rotate(45deg)';
+            spans[1].style.opacity = '0';
+            spans[2].style.transform = 'translateY(-7px) rotate(-45deg)';
+        } else {
+            spans[0].style.transform = '';
+            spans[1].style.opacity = '';
+            spans[2].style.transform = '';
+        }
+    }
+
+    // Close mobile nav on outside click
+    document.addEventListener('click', function(e) {
+        const nav = document.querySelector('nav');
+        const links = document.getElementById('nav-links');
+        if (links && links.classList.contains('open') && !nav.contains(e.target)) {
+            links.classList.remove('open');
+        }
+    });
+
+    // ── DROPDOWN HOVER WITH DELAY TIMER ──────────────────────────
+    document.querySelectorAll('.nav-dropdown').forEach(function(dropdown) {
+        let closeTimer = null;
+
+        function openDropdown() {
+            clearTimeout(closeTimer);
+            dropdown.classList.add('open');
+        }
+
+        function scheduleClose() {
+            closeTimer = setTimeout(function() {
+                dropdown.classList.remove('open');
+            }, 300); // 300ms grace period before closing
+        }
+
+        dropdown.addEventListener('mouseenter', openDropdown);
+        dropdown.addEventListener('mouseleave', scheduleClose);
+
+        // Keep open when mouse re-enters menu (covers the gap)
+        const menu = dropdown.querySelector('.nav-dropdown-menu');
+        if (menu) {
+            menu.addEventListener('mouseenter', openDropdown);
+            menu.addEventListener('mouseleave', scheduleClose);
+        }
+
+        // Close on outside click
+        document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+    });
+    // ─────────────────────────────────────────────────────────────
+
+    function toggleEmergency() {
+        const panel = document.getElementById('emergency-panel');
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function toggleUserMenu() {
+        const dd = document.getElementById('nav-user-dd');
+        dd.classList.toggle('open');
+    }
+
+    // Close user menu on outside click
+    document.addEventListener('click', function(e) {
+        const dd = document.getElementById('nav-user-dd');
+        if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+    });
+
+    function callService(number) {
+        window.location.href = 'tel:' + number;
+    }
+
+
+/* ══════════════════════════════════════════════════
+   FEATURE 10: MULTI-LANGUAGE SUPPORT (Hindi + Odia)
+══════════════════════════════════════════════════ */
+const TRANSLATIONS = {
+    en: {
+        // Nav
+        'Home': 'Home',
+        'Report Disaster': 'Report Disaster',
+        'View Reports': 'View Reports',
+        'Disaster Reports': 'Disaster Reports',
+        'Live Heatmap': 'Live Heatmap',
+        'Missing Persons': 'Missing Persons',
+        'Injured Persons': 'Injured Persons',
+        'Missing Person': 'Missing Person',
+        'Injured Person': 'Injured Person',
+        'Donate': 'Donate',
+        'Admin': 'Admin',
+        // Footer
+        'Emergency': 'Emergency',
+        // Home page
+        'Recent Disasters': 'Recent Disasters',
+        'Missing Persons Alert': 'Missing Persons Alert',
+        'Injured Persons': 'Injured Persons',
+        'View all reports →': 'View all reports →',
+        'View all →': 'View all →',
+        'Report Disaster': 'Report Disaster',
+        // Common
+        'Submit': 'Submit',
+        'Cancel': 'Cancel',
+        'Search': 'Search',
+    },
+    hi: {
+        // Nav
+        'Home': 'होम',
+        'Report Disaster': 'आपदा रिपोर्ट करें',
+        'View Reports': 'रिपोर्ट देखें',
+        'Disaster Reports': 'आपदा रिपोर्ट',
+        'Live Heatmap': 'लाइव हीटमैप',
+        'Missing Persons': 'लापता व्यक्ति',
+        'Injured Persons': 'घायल व्यक्ति',
+        'Missing Person': 'लापता व्यक्ति',
+        'Injured Person': 'घायल व्यक्ति',
+        'Donate': 'दान करें',
+        'Admin': 'एडमिन',
+        // Footer
+        'Emergency': 'आपातकाल',
+        // Home page
+        'Recent Disasters': 'हालिया आपदाएं',
+        'Missing Persons Alert': 'लापता व्यक्ति अलर्ट',
+        'View all reports →': 'सभी रिपोर्ट देखें →',
+        'View all →': 'सभी देखें →',
+        'Report Disaster': 'आपदा दर्ज करें',
+        // Common
+        'Submit': 'सबमिट करें',
+        'Cancel': 'रद्द करें',
+        'Search': 'खोजें',
+        // Buttons
+        '<i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i> SOS': 'आपातकाल',
+        '+ Report Missing': '+ लापता दर्ज करें',
+        '+ Report Injury': '+ चोट दर्ज करें',
+    },
+    or: {
+        // Nav
+        'Home': 'ମୁଖ୍ୟ',
+        'Report Disaster': 'ବିପଦ ରିପୋର୍ଟ',
+        'View Reports': 'ରିପୋର୍ଟ ଦେଖ',
+        'Disaster Reports': 'ବିପଦ ରିପୋର୍ଟ',
+        'Live Heatmap': 'ଲାଇଭ ମ୍ୟାପ',
+        'Missing Persons': 'ନିଖୋଜ ବ୍ୟକ୍ତି',
+        'Injured Persons': 'ଆହତ ବ୍ୟକ୍ତି',
+        'Missing Person': 'ନିଖୋଜ ବ୍ୟକ୍ତି',
+        'Injured Person': 'ଆହତ ବ୍ୟକ୍ତି',
+        'Donate': 'ଦାନ',
+        'Admin': 'ଆଡ୍ମିନ',
+        // Footer
+        'Emergency': 'ଜରୁରୀ',
+        // Home
+        'Recent Disasters': 'ସଦ୍ୟ ବିପଦ',
+        'Missing Persons Alert': 'ନିଖୋଜ ଚେତାବନୀ',
+        'View all reports →': 'ସବୁ ରିପୋର୍ଟ ଦେଖ →',
+        'View all →': 'ସବୁ ଦେଖ →',
+        'Report Disaster': 'ବିପଦ ଦର୍ଜ',
+        // Common
+        'Submit': 'ଦାଖଲ',
+        'Cancel': 'ବାତିଲ',
+        'Search': 'ଖୋଜ',
+        '<i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i> SOS': 'ଜରୁରୀ',
+        '+ Report Missing': '+ ନିଖୋଜ ଦର୍ଜ',
+        '+ Report Injury': '+ ଆଘାତ ଦର୍ଜ',
+    }
+};
+
+let currentLang = localStorage.getItem('disasterLang') || 'en';
+
+function toggleLangMenu() {
+    const menu = document.getElementById('lang-fab-menu');
+    menu.classList.toggle('open');
+}
+
+function setLangFab(lang, label, btn) {
+    // Update FAB label
+    document.getElementById('lang-fab').textContent = label;
+    // Update active option
+    document.querySelectorAll('.lang-fab-opt').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    // Close menu
+    document.getElementById('lang-fab-menu').classList.remove('open');
+    // Apply translations
+    setLang(lang, null);
+}
+
+function setLang(lang, btn) {
+    currentLang = lang;
+    localStorage.setItem('disasterLang', lang);
+    applyTranslations(lang);
+    document.body.setAttribute('data-lang', lang);
+}
+
+function applyTranslations(lang) {
+    const t = TRANSLATIONS[lang];
+    if (!t) return;
+
+    // Translate elements with data-i18n attribute
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key]) el.textContent = t[key];
+    });
+
+    // Translate nav link text nodes
+    document.querySelectorAll('.nav-links a').forEach(a => {
+        const txt = a.getAttribute('data-en') || a.textContent.trim();
+        if (!a.getAttribute('data-en')) a.setAttribute('data-en', txt);
+        if (t[txt]) {
+            // Preserve child elements (icons, chevrons)
+            const children = [...a.children];
+            a.textContent = t[txt] || txt;
+            children.forEach(c => a.appendChild(c));
+        }
+    });
+
+    // Translate nav-sos button
+    const sos = document.querySelector('.nav-sos');
+    if (sos) {
+        if (!sos.getAttribute('data-en')) sos.setAttribute('data-en', sos.textContent.trim());
+        sos.textContent = t['<i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i> SOS'] || sos.getAttribute('data-en');
+    }
+
+    // Translate placeholders
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (t[key]) el.placeholder = t[key];
+    });
+
+    // Translate buttons with data-i18n-btn
+    document.querySelectorAll('[data-i18n-btn]').forEach(el => {
+        const key = el.getAttribute('data-i18n-btn');
+        if (t[key]) el.value = t[key];
+    });
+}
+
+// Init on load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedLang = localStorage.getItem('disasterLang') || 'en';
+    const labels = { en: 'EN', hi: 'हि', or: 'ଓ' };
+    // Restore FAB label
+    const fab = document.getElementById('lang-fab');
+    if (fab) fab.textContent = labels[savedLang] || 'EN';
+    // Restore active option
+    const opt = document.getElementById('lopt-' + savedLang);
+    if (opt) { document.querySelectorAll('.lang-fab-opt').forEach(b => b.classList.remove('active')); opt.classList.add('active'); }
+    if (savedLang !== 'en') applyTranslations(savedLang);
+    document.body.setAttribute('data-lang', savedLang);
+
+    // Close lang menu on outside click
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('lang-fab-menu');
+        const btn  = document.getElementById('lang-fab');
+        if (menu && !menu.contains(e.target) && e.target !== btn) {
+            menu.classList.remove('open');
+        }
+    });
+});
+
+    // Close panel if clicking outside
+    document.addEventListener('click', function(e) {
+        const panel = document.getElementById('emergency-panel');
+        const fab   = document.getElementById('emergency-fab');
+        if (!panel.contains(e.target) && !fab.contains(e.target)) {
+            panel.style.display = 'none';
+        }
+    });
+</script>
+
+{% block extra_js %}{% endblock %}
+
+<script>
+// ── PWA: Register service worker ──────────────────────────────
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js')
+            .catch(err => console.warn('SW registration failed:', err));
+    });
+}
+
+// ── PWA: Install prompt ───────────────────────────────────────
+let _deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _deferredInstall = e;
+    if (!localStorage.getItem('pwa_dismissed')) {
+        document.getElementById('pwa-banner').classList.add('show');
+    }
+});
+document.getElementById('pwa-install-btn').addEventListener('click', () => {
+    if (!_deferredInstall) return;
+    _deferredInstall.prompt();
+    _deferredInstall.userChoice.then(r => {
+        document.getElementById('pwa-banner').classList.remove('show');
+        if (r.outcome === 'accepted') localStorage.setItem('pwa_dismissed', '1');
+    });
+});
+document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
+    document.getElementById('pwa-banner').classList.remove('show');
+    localStorage.setItem('pwa_dismissed', '1');
+});
+window.addEventListener('appinstalled', () => {
+    document.getElementById('pwa-banner').classList.remove('show');
+});
+
+// ── TOAST helper (used by share) ─────────────────────────────
+function showToast(msg, duration = 2000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── SHARE helpers ─────────────────────────────────────────────
+function shareWhatsApp(text, url) {
+    const msg = encodeURIComponent(text + ' ' + url);
+    window.open('https://wa.me/?text=' + msg, '_blank', 'noopener');
+}
+function shareTwitter(text, url) {
+    const msg = encodeURIComponent(text);
+    const u   = encodeURIComponent(url);
+    window.open(`https://twitter.com/intent/tweet?text=${msg}&url=${u}`, '_blank', 'noopener');
+}
+function shareFacebook(url) {
+    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank', 'noopener');
+}
+function copyLink(url, btn) {
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('Link copied!');
+        if (btn) {
+            btn.classList.add('copied');
+            btn.textContent = 'Copied';
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                btn.textContent = 'Copy Link';
+            }, 2000);
+        }
+    }).catch(() => showToast('Copy failed — try manually'));
+}
+
+// ── Native share fallback ─────────────────────────────────────
+function nativeShare(title, text, url) {
+    if (navigator.share) {
+        navigator.share({ title, text, url }).catch(() => {});
+    } else {
+        copyLink(url, null);
+    }
+}
+</script>
+</body>
+</html>

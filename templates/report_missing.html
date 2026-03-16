@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Report Missing Person{% endblock %}
+
+{% block extra_css %}
+.page-header { margin-bottom: 2rem; display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.page-header h2 {
+    font-family: var(--font-head);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.page-header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+
+.form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    max-width: 720px;
+}
+
+.form-card h3 {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+@media (max-width: 600px) { .form-grid-2 { grid-template-columns: 1fr; } }
+
+.form-group { margin-bottom: 1.1rem; }
+.form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.4rem;
+}
+.form-group label .required { color: var(--accent); margin-left: 2px; }
+
+.form-control {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    padding: 0.6rem 0.9rem;
+    transition: border-color 0.2s;
+    outline: none;
+    box-sizing: border-box;
+}
+.form-control:focus {
+    border-color: rgba(232,59,59,0.5);
+    box-shadow: 0 0 0 3px rgba(232,59,59,0.1);
+}
+.form-control option { background: var(--surface2); }
+textarea.form-control { resize: vertical; min-height: 90px; }
+
+/* Photo upload */
+.photo-upload {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+.photo-upload:hover { border-color: rgba(255,255,255,0.2); background: var(--surface2); }
+.photo-upload input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+.photo-upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.photo-upload-text { font-size: 0.85rem; color: var(--muted); }
+.photo-upload-text strong { color: var(--text); }
+.photo-preview {
+    margin-top: 0.75rem;
+    display: none;
+}
+.photo-preview img {
+    max-height: 120px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+/* Severity / status badges inline */
+.gender-row {
+    display: flex;
+    gap: 0.5rem;
+}
+.gender-btn {
+    flex: 1;
+    padding: 0.55rem;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+.gender-btn.selected {
+    border-color: var(--accent);
+    background: rgba(232,59,59,0.1);
+    color: var(--text);
+}
+/* Hide the actual select — we use buttons */
+#gender-select { display: none; }
+
+/* Submit */
+.submit-row { margin-top: 1.5rem; display: flex; gap: 0.75rem; align-items: center; }
+.btn-submit {
+    background: var(--accent);
+    color: white;
+    padding: 0.7rem 2rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: var(--font-body);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-submit:hover { background: #c0392b; transform: translateY(-1px); }
+
+/* Alert banner */
+.info-banner {
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: #93c5fd;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+}
+
+/* ── RESPONSIVE (additional) ── */
+@media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .page-header a.btn-outline { width: 100%; text-align: center; }
+    .form-grid-2 { grid-template-columns: 1fr !important; }
+    .submit-row { flex-direction: column; }
+    .submit-row a, .submit-row button { width: 100%; text-align: center; }
+    .photo-upload-area { padding: 1.5rem 1rem; }
+}
+@media (max-width: 480px) {
+    .toggle-btn { font-size: 0.78rem; padding: 0.4rem 0.7rem; }
+    .info-banner { font-size: 0.78rem; }
+}
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.5rem;"></i> Report Missing Person</h2>
+        <p>Submit details to help locate a missing person. Reports are visible to all responders immediately.</p>
+    </div>
+    <a href="{% url 'view_missing' %}" class="btn btn-outline" style="flex-shrink:0;"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i> View Missing</a>
+</div>
+
+<div class="info-banner">
+    <i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> <span>If this is an emergency, call <strong>100 (Police)</strong> immediately. This form is for crowd-sourced tracking and does not replace official police reports.</span>
+</div>
+
+<div class="form-card">
+    <h3><i class="bi bi-person-fill" style="color:#94a3b8;font-size:1.1rem;"></i> Person Details</h3>
+
+    <form method="POST" enctype="multipart/form-data" id="missing-form">
+        {% csrf_token %}
+        <select name="gender" id="gender-select" required>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <!-- Name + Age -->
+        <div class="form-grid-2">
+            <div class="form-group">
+                <label>Full Name <span class="required">*</span></label>
+                <input
+                    type="text"
+                    name="name"
+                    class="form-control"
+                    placeholder="e.g. Ravi Kumar"
+                    required
+                    autocomplete="off"
+                >
+            </div>
+            <div class="form-group">
+                <label>Age <span class="required">*</span></label>
+                <input
+                    type="number"
+                    name="age"
+                    class="form-control"
+                    placeholder="e.g. 32"
+                    min="0" max="120"
+                    required
+                >
+            </div>
+        </div>
+
+        <!-- Gender toggle -->
+        <div class="form-group">
+            <label>Gender <span class="required">*</span></label>
+            <div class="gender-row">
+                <button type="button" class="gender-btn selected" onclick="selectGender('Male', this)"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Male</button>
+                <button type="button" class="gender-btn" onclick="selectGender('Female', this)"><i class="bi bi-person-fill" style="color:#f9a8d4;font-size:1.1rem;"></i> Female</button>
+                <button type="button" class="gender-btn" onclick="selectGender('Other', this)"><i class="bi bi-person-fill" style="color:#94a3b8;font-size:1.1rem;"></i> Other</button>
+            </div>
+        </div>
+
+        <!-- Last seen location -->
+        <div class="form-group">
+            <label>Last Seen Location <span class="required">*</span></label>
+            <input
+                type="text"
+                name="location"
+                class="form-control"
+                placeholder="e.g. Near Bhubaneswar Railway Station, Platform 2"
+                required
+                autocomplete="off"
+            >
+        </div>
+
+        <!-- Body marks / identification -->
+        <div class="form-group">
+            <label>Body Marks / Identification</label>
+            <textarea
+                name="body_marks"
+                class="form-control"
+                placeholder="Describe clothing worn, scars, tattoos, birthmarks, height, build, hair colour, any other identifying features…"
+            ></textarea>
+        </div>
+
+        <!-- Photo upload -->
+        <div class="form-group">
+            <label>Photo <span style="color:var(--muted); font-weight:400;">(optional but highly recommended)</span></label>
+            <div class="photo-upload" id="photo-drop">
+                <input type="file" name="photo" accept="image/*" onchange="previewPhoto(this)">
+                <div class="photo-upload-icon"><i class="bi bi-camera-fill" style="color:#94a3b8;font-size:1.1rem;"></i></div>
+                <div class="photo-upload-text">
+                    <strong>Click to upload</strong> or drag & drop<br>
+                    JPG, PNG, WEBP — max 5MB
+                </div>
+                <div class="photo-preview" id="photo-preview">
+                    <img id="preview-img" src="" alt="Preview">
+                </div>
+            </div>
+        </div>
+
+        <div class="submit-row">
+            <button type="submit" class="btn-submit">Submit Missing Report</button>
+            <a href="{% url 'home' %}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Gender toggle buttons
+function selectGender(value, btn) {
+    document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('gender-select').value = value;
+}
+
+// Photo preview
+function previewPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Photo must be under 5MB.');
+        input.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('preview-img').src = e.target.result;
+        document.getElementById('photo-preview').style.display = 'block';
+        document.querySelector('.photo-upload-icon').style.display = 'none';
+        document.querySelector('.photo-upload-text').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+
+// Drag & drop visual feedback
+const dropZone = document.getElementById('photo-drop');
+dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--accent)';
+    dropZone.style.background  = 'rgba(232,59,59,0.05)';
+});
+dropZone.addEventListener('dragleave', () => {
+    dropZone.style.borderColor = '';
+    dropZone.style.background  = '';
+});
+dropZone.addEventListener('drop', () => {
+    dropZone.style.borderColor = '';
+    dropZone.style.background  = '';
+});
+</script>
+{% endblock %}

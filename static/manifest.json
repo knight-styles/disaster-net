@@ -1,0 +1,33 @@
+{
+  "name": "DisasterNet — Crowd-Source Disaster Management",
+  "short_name": "DisasterNet",
+  "description": "Real-time disaster reports, missing persons, and emergency coordination.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "orientation": "any",
+  "lang": "en",
+  "categories": ["news", "utilities", "social"],
+  "icons": [
+    { "src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Report Disaster",
+      "short_name": "Report",
+      "description": "Quickly report a new disaster",
+      "url": "/report/",
+      "icons": [{ "src": "/static/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "View Reports",
+      "short_name": "Reports",
+      "description": "See all disaster reports",
+      "url": "/disasters/",
+      "icons": [{ "src": "/static/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

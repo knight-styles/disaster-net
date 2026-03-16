@@ -1,0 +1,13 @@
+# DisasterNet — Django Disaster Management App
+# Install with: pip install -r requirements.txt
+
+# ── Core Framework ─────────────────────────────
+Django>=4.2,<5.0
+
+# ── Image Handling ─────────────────────────────
+# Required for ImageField on MissingPerson, InjuredPerson, DisasterPhoto models
+Pillow>=10.0.0
+
+# ── HTTP Requests ──────────────────────────────
+# Used in utils.py for OSM reverse geocoding and geocode_address API calls
+requests>=2.31.0

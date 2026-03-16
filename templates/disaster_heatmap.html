@@ -1,0 +1,1134 @@
+{% extends "base.html" %}
+{% block title %}Live Disaster Heatmap{% endblock %}
+{% block body_class %}page-heatmap{% endblock %}
+
+{% block extra_css %}
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500&display=swap');
+
+:root {
+    --hm-bg:        #080603;
+    --hm-surface:   #0f0a06;
+    --hm-panel:     #120d07;
+    --hm-border:    rgba(255,124,42,0.08);
+    --hm-border2:   rgba(255,124,42,0.18);
+    --hm-accent:    #ff7c2a;
+    --hm-accent2:   #e83b3b;
+    --hm-text:      #d4e8e0;
+    --hm-muted:     #6b4a2a;
+    --hm-head:      'Barlow Condensed', sans-serif;
+    --hm-mono:      'Share Tech Mono', monospace;
+    --hm-body:      'Barlow', sans-serif;
+    --hm-glow:      0 0 18px rgba(255,124,42,0.25);
+    --hm-glow-red:  0 0 18px rgba(232,59,59,0.4);
+}
+
+/* ── FULL PAGE RESET FOR HEATMAP ── */
+body.page-heatmap * { font-family: var(--hm-body); }
+
+/* ── TOP COMMAND BAR ── */
+.hm-cmdbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0 1.5rem;
+    height: 52px;
+    flex-shrink: 0;
+    background: var(--hm-surface);
+    border-bottom: 1px solid var(--hm-border2);
+    position: relative;
+    overflow: hidden;
+}
+.hm-cmdbar::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--hm-accent), transparent);
+    animation: scan-h 4s linear infinite;
+}
+@keyframes scan-h {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.hm-title-block {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.hm-radar-icon {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--hm-accent);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: var(--hm-glow);
+}
+.hm-radar-icon svg { color: var(--hm-accent); }
+.hm-radar-ring {
+    position: absolute; inset: -5px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,124,42,0.3);
+    animation: radar-expand 2s ease-out infinite;
+}
+@keyframes radar-expand {
+    0%   { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.8); opacity: 0; }
+}
+.hm-title {
+    font-family: var(--hm-head);
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--hm-text);
+    line-height: 1;
+}
+.hm-title span { color: var(--hm-accent); }
+.hm-subtitle {
+    font-family: var(--hm-mono);
+    font-size: 0.6rem;
+    color: var(--hm-muted);
+    letter-spacing: 1px;
+    margin-top: 1px;
+}
+
+.hm-cmdbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.hm-live-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: var(--hm-mono);
+    font-size: 0.68rem;
+    color: var(--hm-accent);
+    letter-spacing: 0.5px;
+    padding: 0.2rem 0.65rem;
+    border: 1px solid rgba(255,124,42,0.2);
+    border-radius: 4px;
+    background: rgba(255,124,42,0.04);
+}
+.hm-live-dot {
+    width: 6px; height: 6px;
+    background: var(--hm-accent);
+    border-radius: 50%;
+    animation: live-blink 1.4s ease-in-out infinite;
+    box-shadow: 0 0 6px var(--hm-accent);
+}
+@keyframes live-blink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.2; }
+}
+.hm-report-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.9rem;
+    background: var(--hm-accent2);
+    color: #fff;
+    font-family: var(--hm-head);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    box-shadow: 0 0 14px rgba(232,59,59,0.35);
+}
+.hm-report-btn:hover {
+    background: #c0392b;
+    box-shadow: 0 0 22px rgba(232,59,59,0.55);
+    transform: translateY(-1px);
+}
+.hm-report-btn svg { flex-shrink: 0; }
+
+/* ── MAIN LAYOUT ── */
+.hm-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: calc(100vh - 64px - 52px);
+    min-height: 400px;
+    overflow: hidden;
+}
+
+/* ── LEFT PANEL ── */
+.hm-panel {
+    background: var(--hm-panel);
+    border-right: 1px solid var(--hm-border2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+/* Scanline overlay */
+.hm-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(255,124,42,0.012) 3px,
+        rgba(255,124,42,0.012) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+.hm-panel > * { position: relative; z-index: 1; }
+
+/* ── SECTION HEADERS ── */
+.hm-sec-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-family: var(--hm-mono);
+    font-size: 0.62rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--hm-accent);
+    border-bottom: 1px solid var(--hm-border);
+    background: rgba(255,124,42,0.03);
+    flex-shrink: 0;
+}
+.hm-sec-head::before {
+    content: '//';
+    color: var(--hm-muted);
+    font-size: 0.6rem;
+    margin-right: 0.1rem;
+}
+
+/* ── STATS STRIP ── */
+.hm-stats-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--hm-border);
+}
+.hm-stat {
+    padding: 0.6rem 0.5rem;
+    text-align: center;
+    border-right: 1px solid var(--hm-border);
+    position: relative;
+    overflow: hidden;
+}
+.hm-stat:last-child { border-right: none; }
+.hm-stat-num {
+    font-family: var(--hm-head);
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 1px;
+}
+.hm-stat-num.total { color: var(--hm-accent); text-shadow: 0 0 10px rgba(255,124,42,0.4); }
+.hm-stat-num.fire  { color: #ff6b35; text-shadow: 0 0 8px rgba(255,107,53,0.4); }
+.hm-stat-num.flood { color: #38bdf8; text-shadow: 0 0 8px rgba(56,189,248,0.4); }
+.hm-stat-num.other { color: #a78bfa; text-shadow: 0 0 8px rgba(167,139,250,0.4); }
+.hm-stat-label {
+    font-family: var(--hm-mono);
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--hm-muted);
+    margin-top: 2px;
+}
+.hm-stat-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 2px;
+    border-radius: 0;
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── FILTERS SECTION ── */
+.hm-filters-body {
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--hm-border);
+}
+.hm-filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+.hm-filter-group { display: flex; flex-direction: column; gap: 0.25rem; }
+.hm-filter-label {
+    font-family: var(--hm-mono);
+    font-size: 0.58rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--hm-muted);
+}
+.hm-select {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--hm-border2);
+    border-radius: 3px;
+    color: var(--hm-text);
+    padding: 0.35rem 0.6rem;
+    font-family: var(--hm-mono);
+    font-size: 0.72rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+}
+.hm-select:focus { border-color: var(--hm-accent); box-shadow: var(--hm-glow); }
+.hm-select option { background: #0b1118; }
+
+/* Date range slider */
+.hm-range-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+}
+.hm-range-val {
+    font-family: var(--hm-mono);
+    font-size: 0.68rem;
+    color: var(--hm-accent);
+    letter-spacing: 0.5px;
+}
+input[type=range].hm-range {
+    width: 100%;
+    accent-color: var(--hm-accent);
+    cursor: pointer;
+    display: block;
+    margin-bottom: 0.6rem;
+    height: 4px;
+}
+.hm-btn-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+}
+.hm-apply-btn {
+    background: rgba(255,124,42,0.1);
+    border: 1px solid var(--hm-accent);
+    border-radius: 3px;
+    color: var(--hm-accent);
+    font-family: var(--hm-head);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 0.4rem 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.hm-apply-btn:hover {
+    background: rgba(255,124,42,0.18);
+    box-shadow: var(--hm-glow);
+}
+.hm-reset-btn {
+    background: transparent;
+    border: 1px solid var(--hm-border2);
+    border-radius: 3px;
+    color: var(--hm-muted);
+    font-family: var(--hm-mono);
+    font-size: 0.7rem;
+    padding: 0.4rem 0.65rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.hm-reset-btn:hover {
+    border-color: rgba(255,255,255,0.25);
+    color: var(--hm-text);
+}
+
+/* ── LEGEND ── */
+.hm-legend-body {
+    padding: 0.6rem 1rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--hm-border);
+}
+.hm-legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.22rem 0.5rem;
+}
+.hm-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: var(--hm-mono);
+    font-size: 0.65rem;
+    color: var(--hm-muted);
+    padding: 0.18rem 0;
+    transition: color 0.15s;
+    cursor: default;
+}
+.hm-legend-row:hover { color: var(--hm-text); }
+.hm-legend-pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+}
+.hm-size-hint {
+    font-family: var(--hm-mono);
+    font-size: 0.58rem;
+    color: var(--hm-muted);
+    margin-top: 0.4rem;
+    letter-spacing: 0.5px;
+    border-top: 1px solid var(--hm-border);
+    padding-top: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* ── RECENT EVENTS FEED ── */
+.hm-feed {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+#recent-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.25rem 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,124,42,0.2) transparent;
+}
+#recent-list::-webkit-scrollbar { width: 3px; }
+#recent-list::-webkit-scrollbar-thumb {
+    background: rgba(255,124,42,0.2);
+    border-radius: 2px;
+}
+
+.event-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid rgba(255,124,42,0.04);
+    cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+}
+.event-item:hover {
+    background: rgba(255,124,42,0.04);
+}
+.event-item:hover::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--hm-accent);
+    box-shadow: var(--hm-glow);
+}
+.event-color-bar {
+    width: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
+    min-height: 36px;
+}
+.event-info { flex: 1; min-width: 0; }
+.event-type {
+    font-family: var(--hm-head);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--hm-text);
+    line-height: 1.2;
+}
+.event-loc {
+    font-family: var(--hm-mono);
+    font-size: 0.6rem;
+    color: var(--hm-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.3px;
+}
+.event-time {
+    font-family: var(--hm-mono);
+    font-size: 0.58rem;
+    color: rgba(74,107,92,0.8);
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+}
+.event-lvl {
+    font-family: var(--hm-mono);
+    font-size: 0.58rem;
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-weight: 400;
+    flex-shrink: 0;
+    margin-top: 2px;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.lvl-Critical { background:rgba(232,59,59,0.15);  color:#f87171;  border:1px solid rgba(232,59,59,0.2); }
+.lvl-High     { background:rgba(249,115,22,0.15); color:#fb923c;  border:1px solid rgba(249,115,22,0.2); }
+.lvl-Moderate { background:rgba(251,191,36,0.15); color:#fbbf24;  border:1px solid rgba(251,191,36,0.2); }
+.lvl-Low      { background:rgba(34,197,94,0.1);   color:#4ade80;  border:1px solid rgba(34,197,94,0.15); }
+.lvl-Minimal  { background:rgba(255,124,42,0.05);  color:var(--hm-muted); border:1px solid var(--hm-border2); }
+.lvl-Unknown  { background:rgba(107,114,128,0.1); color:#6b7280;  border:1px solid rgba(107,114,128,0.15); }
+
+/* ── MAP AREA ── */
+.hm-map-area {
+    position: relative;
+    overflow: hidden;
+}
+#heatmap {
+    width: 100%;
+    height: 100%;
+}
+
+/* Custom dark Leaflet tiles */
+.hm-map-area .leaflet-tile {
+    filter: brightness(0.85) saturate(0.7) hue-rotate(15deg);
+}
+
+/* ── MAP OVERLAYS ── */
+/* Top-left: counter badge */
+.map-badge {
+    position: absolute;
+    top: 14px; left: 14px;
+    z-index: 800;
+    background: rgba(6,10,15,0.88);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--hm-border2);
+    border-radius: 4px;
+    padding: 0.5rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 150px;
+}
+.map-badge-num {
+    font-family: var(--hm-head);
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--hm-accent);
+    line-height: 1;
+    text-shadow: 0 0 12px rgba(255,124,42,0.5);
+}
+.map-badge-text {
+    font-family: var(--hm-mono);
+    font-size: 0.6rem;
+    color: var(--hm-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    line-height: 1.4;
+}
+
+/* Top-right: coords tracker */
+.map-coords {
+    position: absolute;
+    top: 14px; right: 14px;
+    z-index: 800;
+    background: rgba(6,10,15,0.8);
+    border: 1px solid var(--hm-border);
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    font-family: var(--hm-mono);
+    font-size: 0.6rem;
+    color: var(--hm-muted);
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    display: none;
+}
+.map-coords.show { display: block; }
+
+/* Bottom: hint */
+.map-hint {
+    position: absolute;
+    bottom: 30px; right: 14px;
+    z-index: 800;
+    background: rgba(6,10,15,0.75);
+    border: 1px solid var(--hm-border);
+    border-radius: 4px;
+    padding: 0.28rem 0.6rem;
+    font-family: var(--hm-mono);
+    font-size: 0.6rem;
+    color: var(--hm-muted);
+    letter-spacing: 0.5px;
+    pointer-events: none;
+}
+
+/* Last updated strip */
+.map-updated {
+    position: absolute;
+    bottom: 30px; left: 14px;
+    z-index: 800;
+    font-family: var(--hm-mono);
+    font-size: 0.6rem;
+    color: var(--hm-muted);
+    background: rgba(6,10,15,0.75);
+    border: 1px solid var(--hm-border);
+    border-radius: 4px;
+    padding: 0.28rem 0.6rem;
+    letter-spacing: 0.3px;
+}
+#last-updated { color: var(--hm-accent); }
+
+/* ── NO DATA OVERLAY ── */
+.hm-empty {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(6,10,15,0.88);
+    z-index: 900;
+    gap: 0.75rem;
+    pointer-events: none;
+}
+.hm-empty.show { display: flex; }
+.hm-empty-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 1.5px solid var(--hm-border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+}
+.hm-empty-title {
+    font-family: var(--hm-head);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--hm-muted);
+}
+.hm-empty-sub {
+    font-family: var(--hm-mono);
+    font-size: 0.68rem;
+    color: rgba(74,107,92,0.7);
+    letter-spacing: 0.5px;
+}
+
+/* ── LEAFLET POPUP OVERRIDE ── */
+.leaflet-popup-content-wrapper {
+    background: rgba(11,17,24,0.97) !important;
+    border: 1px solid var(--hm-border2) !important;
+    border-radius: 6px !important;
+    color: var(--hm-text) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7), var(--hm-glow) !important;
+    backdrop-filter: blur(10px);
+}
+.leaflet-popup-tip { background: rgba(11,17,24,0.97) !important; }
+.leaflet-popup-content { margin: 0 !important; padding: 0 !important; }
+
+.popup-inner { padding: 0.8rem 1rem; min-width: 200px; }
+.popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--hm-border);
+}
+.popup-type {
+    font-family: var(--hm-head);
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.popup-level {
+    font-family: var(--hm-mono);
+    font-size: 0.58rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.popup-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+.popup-row-label {
+    font-family: var(--hm-mono);
+    font-size: 0.58rem;
+    color: var(--hm-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    width: 44px;
+    flex-shrink: 0;
+    padding-top: 1px;
+}
+.popup-row-val {
+    font-size: 0.75rem;
+    color: var(--hm-text);
+    flex: 1;
+    line-height: 1.4;
+}
+.popup-footer {
+    margin-top: 0.65rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--hm-border);
+    display: flex;
+    justify-content: flex-end;
+}
+.popup-link {
+    font-family: var(--hm-head);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--hm-accent) !important;
+    text-decoration: none !important;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid rgba(255,124,42,0.3);
+    border-radius: 3px;
+    background: rgba(255,124,42,0.05);
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.popup-link:hover {
+    background: rgba(255,124,42,0.12) !important;
+    box-shadow: var(--hm-glow);
+}
+
+/* ── LOADING PULSE ── */
+.hm-loader {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(6,10,15,0.6);
+    z-index: 850;
+    pointer-events: none;
+}
+.hm-loader.show { display: flex; }
+.hm-loader-ring {
+    width: 40px; height: 40px;
+    border: 2px solid transparent;
+    border-top-color: var(--hm-accent);
+    border-right-color: rgba(255,124,42,0.3);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    box-shadow: var(--hm-glow);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 960px) {
+    .hm-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+    }
+    .hm-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--hm-border2);
+        max-height: 420px;
+        overflow: auto;
+    }
+    .hm-map-area {
+        height: 55vw;
+        min-height: 340px;
+    }
+    .hm-stats-strip { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 540px) {
+    .hm-cmdbar { padding: 0 0.75rem; height: auto; min-height: 52px; flex-wrap: wrap; padding-top: 0.5rem; padding-bottom: 0.5rem; gap: 0.5rem; }
+    .hm-title { font-size: 1.1rem; }
+    .hm-map-area { height: 72vw; min-height: 260px; }
+    .map-badge { display: none; }
+}
+{% endblock %}
+
+{% block content %}
+
+<!-- ── COMMAND BAR ── -->
+<div class="hm-cmdbar">
+    <div class="hm-title-block">
+        <div class="hm-radar-icon">
+            <div class="hm-radar-ring"></div>
+            <i class="bi bi-broadcast-pin" style="color:currentColor;font-size:1.1rem;"></i>
+        </div>
+        <div>
+            <div class="hm-title">Disaster <span>Heatmap</span></div>
+            <div class="hm-subtitle">REAL-TIME · INDIA · CROWD SOURCED</div>
+        </div>
+    </div>
+    <div class="hm-cmdbar-right">
+        <div class="hm-live-badge">
+            <span class="hm-live-dot"></span>
+            LIVE &nbsp;·&nbsp; <span id="last-updated">—</span>
+        </div>
+        <a href="{% url 'report_disaster' %}" class="hm-report-btn">
+            <i class="bi bi-plus-circle-fill" style="color:currentColor;font-size:1.1rem;"></i>
+            Report
+        </a>
+    </div>
+</div>
+
+<!-- ── MAIN LAYOUT ── -->
+<div class="hm-layout">
+
+    <!-- ── LEFT PANEL ── -->
+    <div class="hm-panel">
+
+        <!-- Stats strip -->
+        <div class="hm-sec-head">Overview</div>
+        <div class="hm-stats-strip">
+            <div class="hm-stat">
+                <div class="hm-stat-num total" id="stat-total">–</div>
+                <div class="hm-stat-label">TOTAL</div>
+                <div class="hm-stat-bar" id="bar-total" style="background:var(--hm-accent);width:0%"></div>
+            </div>
+            <div class="hm-stat">
+                <div class="hm-stat-num fire" id="stat-fire">–</div>
+                <div class="hm-stat-label">FIRE</div>
+                <div class="hm-stat-bar" id="bar-fire" style="background:#ff6b35;width:0%"></div>
+            </div>
+            <div class="hm-stat">
+                <div class="hm-stat-num flood" id="stat-flood">–</div>
+                <div class="hm-stat-label">FLOOD</div>
+                <div class="hm-stat-bar" id="bar-flood" style="background:#38bdf8;width:0%"></div>
+            </div>
+            <div class="hm-stat">
+                <div class="hm-stat-num other" id="stat-other">–</div>
+                <div class="hm-stat-label">OTHER</div>
+                <div class="hm-stat-bar" id="bar-other" style="background:#a78bfa;width:0%"></div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="hm-sec-head">Filters</div>
+        <div class="hm-filters-body">
+            <div class="hm-filter-row">
+                <div class="hm-filter-group">
+                    <div class="hm-filter-label">Type</div>
+                    <select id="f-type" class="hm-select">
+                        <option value="">All Types</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Flood">Flood</option>
+                        <option value="Earthquake">Earthquake</option>
+                        <option value="Cyclone">Cyclone</option>
+                        <option value="Landslide">Landslide</option>
+                        <option value="Tsunami">Tsunami</option>
+                        <option value="Accident">Accident</option>
+                        <option value="Chemical Spill">Chemical Spill</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="hm-filter-group">
+                    <div class="hm-filter-label">Severity</div>
+                    <select id="f-level" class="hm-select">
+                        <option value="">All Levels</option>
+                        <option value="Critical">Critical</option>
+                        <option value="High">High</option>
+                        <option value="Moderate">Moderate</option>
+                        <option value="Low">Low</option>
+                        <option value="Minimal">Minimal</option>
+                    </select>
+                </div>
+            </div>
+            <div class="hm-range-row">
+                <div class="hm-filter-label">Date Range</div>
+                <div class="hm-range-val" id="days-label">Last 30 days</div>
+            </div>
+            <input type="range" class="hm-range" id="f-days" min="1" max="365" value="30"
+                   oninput="document.getElementById('days-label').textContent='Last '+this.value+' day'+(this.value>1?'s':'')">
+            <div class="hm-btn-row">
+                <button class="hm-apply-btn" onclick="loadData()">Apply Filters</button>
+                <button class="hm-reset-btn" onclick="resetFilters()">Reset</button>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="hm-sec-head">Legend</div>
+        <div class="hm-legend-body">
+            <div class="hm-legend-grid">
+                <div class="hm-legend-row"><div class="hm-legend-pip" style="background:#ff4500;color:#ff4500;"></div>Fire</div>
+                <div class="hm-legend-row"><div class="hm-legend-pip" style="background:#38bdf8;color:#38bdf8;"></div>Flood</div>
+                <div class="hm-legend-row"><div class="hm-legend-pip" style="background:#a78bfa;color:#a78bfa;"></div>Earthquake</div>
+                <div class="hm-legend-row"><div class="hm-legend-pip" style="background:#818cf8;color:#818cf8;"></div>Cyclone</div>
+                <div class="hm-legend-row"><div class="hm-legend-pip" style="background:#22d3ee;color:#22d3ee;"></div>Tsunami</div>
+                <div class="hm-legend-row"><div class="hm-legend-pip" style="background:#84cc16;color:#84cc16;"></div>Landslide</div>
+                <div class="hm-legend-row"><div class="hm-legend-pip" style="background:#fbbf24;color:#fbbf24;"></div>Accident</div>
+                <div class="hm-legend-row"><div class="hm-legend-pip" style="background:#6b7280;color:#6b7280;"></div>Other</div>
+            </div>
+            <div class="hm-size-hint">
+                <i class="bi bi-circle-fill" style="color:currentColor;font-size:0.5rem;"></i>
+                Marker size = crowd intensity
+            </div>
+        </div>
+
+        <!-- Recent events feed -->
+        <div class="hm-sec-head">Recent Events</div>
+        <div class="hm-feed">
+            <div id="recent-list">
+                <div style="padding:1rem;font-family:var(--hm-mono);font-size:0.7rem;color:var(--hm-muted);letter-spacing:1px;">
+                    LOADING DATA…
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── MAP AREA ── -->
+    <div class="hm-map-area">
+        <div id="heatmap"></div>
+
+        <!-- Counter badge -->
+        <div class="map-badge">
+            <div>
+                <div class="map-badge-num" id="point-count">0</div>
+            </div>
+            <div class="map-badge-text">DISASTERS<br>ON MAP</div>
+        </div>
+
+        <!-- Coords -->
+        <div class="map-coords" id="map-coords">LAT — · LNG —</div>
+
+        <!-- Bottom hint -->
+        <div class="map-hint">SCROLL TO ZOOM &nbsp;·&nbsp; CLICK MARKER FOR DETAILS</div>
+
+        <!-- Updated -->
+        <div class="map-updated">UPDATED: <span id="last-updated-map">—</span></div>
+
+        <!-- Loader -->
+        <div class="hm-loader" id="hm-loader">
+            <div class="hm-loader-ring"></div>
+        </div>
+
+        <!-- No data -->
+        <div class="hm-empty" id="no-data-overlay">
+            <div class="hm-empty-icon">
+                <i class="bi bi-map-fill" style="color:#4a6b5c;font-size:1.1rem;"></i>
+            </div>
+            <div class="hm-empty-title">No Data Found</div>
+            <div class="hm-empty-sub">Adjust filters or widen date range</div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── CONFIG ─────────────────────────────────────────────────
+const TYPE_COLORS = {
+    'Fire':'#ff4500','Flood':'#38bdf8','Earthquake':'#a78bfa',
+    'Cyclone':'#818cf8','Tsunami':'#22d3ee','Landslide':'#84cc16',
+    'Accident':'#fbbf24','Chemical Spill':'#f59e0b','Other':'#6b7280',
+};
+const LEVEL_RADIUS = { 'Minimal':7,'Low':10,'Moderate':14,'High':19,'Critical':25,'Unknown':9 };
+const LEVEL_OPACITY = { 'Minimal':0.4,'Low':0.5,'Moderate':0.6,'High':0.7,'Critical':0.8,'Unknown':0.45 };
+
+// ── MAP INIT ────────────────────────────────────────────────
+const map = L.map('heatmap', {
+    center: [20.5937, 78.9629],
+    zoom: 5,
+    zoomControl: true,
+    scrollWheelZoom: true,
+    attributionControl: false,
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19, subdomains: 'abcd',
+}).addTo(map);
+
+// Small attribution
+L.control.attribution({ position: 'bottomright', prefix: false })
+    .addAttribution('© OpenStreetMap · © CARTO')
+    .addTo(map);
+
+// Track mouse coords
+map.on('mousemove', function(e) {
+    const c = document.getElementById('map-coords');
+    c.textContent = `LAT ${e.latlng.lat.toFixed(4)} · LNG ${e.latlng.lng.toFixed(4)}`;
+    c.classList.add('show');
+});
+map.on('mouseout', function() {
+    document.getElementById('map-coords').classList.remove('show');
+});
+
+let markers = [];
+
+// ── LOAD DATA ────────────────────────────────────────────────
+function loadData() {
+    document.getElementById('hm-loader').classList.add('show');
+    const params = new URLSearchParams({
+        type:  document.getElementById('f-type').value,
+        level: document.getElementById('f-level').value,
+        days:  document.getElementById('f-days').value,
+    });
+    fetch(`/api/heatmap-data/?${params}`)
+        .then(r => r.json())
+        .then(data => {
+            renderMarkers(data.points);
+            updateStats(data);
+            renderFeed(data.points.slice(0, 12));
+            const now = new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+            document.getElementById('last-updated').textContent = now;
+            document.getElementById('last-updated-map').textContent = now;
+            document.getElementById('hm-loader').classList.remove('show');
+        })
+        .catch(() => {
+            document.getElementById('hm-loader').classList.remove('show');
+            console.warn('Heatmap fetch failed');
+        });
+}
+
+// ── RENDER MARKERS ──────────────────────────────────────────
+function renderMarkers(points) {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+
+    const overlay = document.getElementById('no-data-overlay');
+    document.getElementById('point-count').textContent = points.length;
+
+    if (!points.length) {
+        overlay.classList.add('show');
+        return;
+    }
+    overlay.classList.remove('show');
+
+    points.forEach(pt => {
+        const color   = TYPE_COLORS[pt.type] || '#6b7280';
+        const radius  = LEVEL_RADIUS[pt.level] || 10;
+        const opacity = LEVEL_OPACITY[pt.level] || 0.5;
+        const lvlClass = `lvl-${pt.level || 'Unknown'}`;
+
+        const circle = L.circleMarker([pt.lat, pt.lng], {
+            radius,
+            color,
+            fillColor: color,
+            fillOpacity: opacity,
+            weight: 1.5,
+            opacity: 0.95,
+        });
+
+        circle.bindPopup(L.popup({
+            closeButton: true,
+            maxWidth: 260,
+            className: 'hm-popup',
+        }).setContent(`
+            <div class="popup-inner">
+                <div class="popup-header">
+                    <div class="popup-type" style="color:${color}">${pt.type}</div>
+                    <span class="popup-level ${lvlClass}">${pt.level || 'Unknown'}</span>
+                </div>
+                <div class="popup-row">
+                    <div class="popup-row-label">WHERE</div>
+                    <div class="popup-row-val">${pt.location}</div>
+                </div>
+                ${pt.description ? `
+                <div class="popup-row">
+                    <div class="popup-row-label">INFO</div>
+                    <div class="popup-row-val" style="color:#8b9aa0;">${pt.description.slice(0,80)}${pt.description.length>80?'…':''}</div>
+                </div>` : ''}
+                <div class="popup-row">
+                    <div class="popup-row-label">WHEN</div>
+                    <div class="popup-row-val" style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:#6b4a2a;">${pt.reported_at}</div>
+                </div>
+                <div class="popup-footer">
+                    <a class="popup-link" href="${pt.url}">View Details →</a>
+                </div>
+            </div>
+        `));
+
+        circle.on('mouseover', function() { this.openPopup(); });
+        circle.on('click',     function() { window.location = pt.url; });
+        circle.addTo(map);
+        markers.push(circle);
+    });
+
+    if (markers.length > 0) {
+        try {
+            map.fitBounds(
+                L.featureGroup(markers).getBounds().pad(0.12),
+                { maxZoom: 10, animate: true, duration: 0.8 }
+            );
+        } catch(e) {}
+    }
+}
+
+// ── STATS ────────────────────────────────────────────────────
+function updateStats(data) {
+    const total = data.total || 0;
+    const fire  = data.stats?.fire  || 0;
+    const flood = data.stats?.flood || 0;
+    const other = (data.stats?.other || 0) + (data.stats?.earthquake || 0) + (data.stats?.cyclone || 0);
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-fire').textContent  = fire;
+    document.getElementById('stat-flood').textContent = flood;
+    document.getElementById('stat-other').textContent = other;
+
+    // Animate stat bars
+    const pct = (n) => total > 0 ? Math.max(8, Math.round((n/total)*100)) : 0;
+    setTimeout(() => {
+        document.getElementById('bar-total').style.width = '100%';
+        document.getElementById('bar-fire').style.width  = pct(fire)  + '%';
+        document.getElementById('bar-flood').style.width = pct(flood) + '%';
+        document.getElementById('bar-other').style.width = pct(other) + '%';
+    }, 100);
+}
+
+// ── RECENT EVENTS FEED ───────────────────────────────────────
+function renderFeed(points) {
+    const el = document.getElementById('recent-list');
+    if (!points.length) {
+        el.innerHTML = `<div style="padding:1rem;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--hm-muted);letter-spacing:1px;">NO EVENTS FOUND</div>`;
+        return;
+    }
+    el.innerHTML = points.map(pt => {
+        const color = TYPE_COLORS[pt.type] || '#6b7280';
+        const lvlClass = `lvl-${pt.level || 'Unknown'}`;
+        return `
+        <div class="event-item" onclick="window.location='${pt.url}'">
+            <div class="event-color-bar" style="background:${color};box-shadow:0 0 6px ${color}55;"></div>
+            <div class="event-info">
+                <div class="event-type" style="color:${color};">${pt.type}</div>
+                <div class="event-loc">${pt.location}</div>
+                <div class="event-time">${pt.reported_at}</div>
+            </div>
+            <span class="event-lvl ${lvlClass}">${(pt.level||'?').slice(0,3)}</span>
+        </div>`;
+    }).join('');
+}
+
+// ── RESET ─────────────────────────────────────────────────────
+function resetFilters() {
+    document.getElementById('f-type').value  = '';
+    document.getElementById('f-level').value = '';
+    document.getElementById('f-days').value  = 30;
+    document.getElementById('days-label').textContent = 'Last 30 days';
+    loadData();
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    loadData();
+    setInterval(loadData, 30000);
+    setTimeout(() => map.invalidateSize(), 200);
+});
+</script>
+{% endblock %}

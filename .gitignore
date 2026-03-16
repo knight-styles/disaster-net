@@ -1,0 +1,27 @@
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+
+# database
+db.sqlite3
+
+# migrations (optional if fresh database)
+*/migrations/*.py
+!*/migrations/__init__.py
+
+# virtual environment
+venv/
+env/
+.venv/
+
+# env variables
+.env
+
+# static files collected
+staticfiles/
+
+# IDE
+.vscode/
+.idea/

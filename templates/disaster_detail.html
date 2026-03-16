@@ -1,0 +1,1724 @@
+{% extends "base.html" %}
+
+{% block title %}{{ disaster.disaster_type }} — {{ disaster.location }}{% endblock %}
+
+{% block extra_css %}
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.83rem;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    transition: color 0.2s;
+}
+.back-link:hover { color: var(--text); }
+
+.detail-hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+.detail-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+}
+.detail-hero.Fire::before        { background: linear-gradient(90deg,#ff4500,#ff8c00); }
+.detail-hero.Flood::before       { background: linear-gradient(90deg,#0ea5e9,#38bdf8); }
+.detail-hero.Earthquake::before  { background: linear-gradient(90deg,#7c3aed,#a78bfa); }
+.detail-hero.Cyclone::before     { background: linear-gradient(90deg,#6366f1,#818cf8); }
+.detail-hero.Tsunami::before     { background: linear-gradient(90deg,#0891b2,#22d3ee); }
+.detail-hero.Landslide::before   { background: linear-gradient(90deg,#92400e,#d97706); }
+.detail-hero.Accident::before    { background: linear-gradient(90deg,#b45309,#fbbf24); }
+.detail-hero.Industrial::before  { background: linear-gradient(90deg,#374151,#6b7280); }
+.detail-hero.Other::before       { background: linear-gradient(90deg,#374151,#4b5563); }
+.detail-hero[data-type="Chemical Spill"]::before { background: linear-gradient(90deg,#374151,#6b7280); }
+
+.hero-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+.hero-type { display: flex; align-items: center; gap: 0.75rem; }
+.hero-icon { font-size: 2.5rem; line-height: 1; }
+.hero-title { font-family: var(--font-head); font-size: 2rem; font-weight: 700; letter-spacing: 0.5px; line-height: 1.1; }
+.hero-sub { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+
+.crowd-badge {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.crowd-badge.Minimal  { background:rgba(59,130,246,0.15);  color:#93c5fd; border:1px solid rgba(59,130,246,0.3); }
+.crowd-badge.Low      { background:rgba(74,222,128,0.15);  color:#4ade80; border:1px solid rgba(74,222,128,0.3); }
+.crowd-badge.Moderate { background:rgba(245,158,11,0.15);  color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+.crowd-badge.High     { background:rgba(248,113,113,0.15); color:#f87171; border:1px solid rgba(248,113,113,0.3); }
+.crowd-badge.Critical { background:rgba(239,68,68,0.9);    color:#fff;    border:1px solid #ef4444; }
+.crowd-badge.Unknown  { background:rgba(107,114,128,0.15); color:#9ca3af; border:1px solid rgba(107,114,128,0.3); }
+
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 1rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+}
+@media (max-width:600px) { .hero-stats { grid-template-columns: 1fr 1fr; } }
+
+.hero-stat-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; }
+.hero-stat-value { font-size:1rem; font-weight:600; color:var(--text); }
+.hero-stat-value.big { font-family:var(--font-head); font-size:1.6rem; font-weight:700; color:var(--accent); }
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+}
+@media (max-width:860px) { .detail-grid { grid-template-columns: 1fr; } }
+
+.section-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:1.25rem; }
+.section-card:last-child { margin-bottom:0; }
+.section-header { padding:0.85rem 1.25rem; border-bottom:1px solid var(--border); font-family:var(--font-head); font-size:0.95rem; font-weight:600; display:flex; align-items:center; gap:0.5rem; background:var(--surface2); }
+.section-body { padding:1.25rem; }
+
+.description-text { font-size:0.9rem; color:var(--muted); line-height:1.8; }
+
+.info-row { display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem 0; border-bottom:1px solid var(--border); font-size:0.85rem; }
+.info-row:last-child { border-bottom:none; padding-bottom:0; }
+.info-icon { font-size:1rem; width:22px; text-align:center; flex-shrink:0; margin-top:1px; }
+.info-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px; }
+.info-value { color:var(--text); font-weight:500; }
+
+#detail-map { height:260px; border-radius:8px; overflow:hidden; z-index:0; position:relative; }
+.no-location { height:100px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:0.85rem; background:var(--surface2); border-radius:8px; }
+
+.emergency-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; }
+.emergency-btn { display:flex; align-items:center; gap:0.6rem; padding:0.75rem; border-radius:8px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; transition:all 0.2s; text-decoration:none; }
+.emergency-btn:hover { border-color:rgba(255,255,255,0.2); }
+.e-icon { font-size:1.2rem; flex-shrink:0; }
+.e-num { font-family:var(--font-head); font-size:1.1rem; font-weight:700; color:var(--accent); line-height:1; }
+.e-label { font-size:0.7rem; color:var(--muted); margin-top:1px; }
+
+.action-row { display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1.25rem; }
+.btn-action { flex:1; min-width:130px; padding:0.65rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:500; font-family:var(--font-body); text-align:center; text-decoration:none; border:1px solid var(--border); background:var(--surface2); color:var(--muted); transition:all 0.2s; }
+.btn-action:hover { color:var(--text); border-color:rgba(255,255,255,0.2); }
+.btn-action.primary { background:var(--accent); color:white; border-color:var(--accent); }
+.btn-action.primary:hover { background:#c0392b; }
+
+.related-link { display:flex; align-items:center; gap:0.6rem; padding:0.6rem 0.75rem; border-radius:7px; background:var(--surface2); border:1px solid var(--border); text-decoration:none; margin-bottom:0.4rem; font-size:0.83rem; color:var(--muted); transition:all 0.2s; }
+.related-link:hover { color:var(--text); border-color:rgba(255,255,255,0.15); }
+.related-link:last-child { margin-bottom:0; }
+
+/* ── SURVIVAL GUIDE ── */
+.survival-section { margin-bottom: 1.25rem; }
+.survival-tabs {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+}
+.stab {
+    padding: 0.3rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-body);
+    transition: all 0.18s;
+}
+.stab:hover { color: var(--text); }
+.stab.active { background: rgba(232,59,59,0.12); border-color: var(--accent); color: var(--text); }
+
+.survival-panel { display: none; padding: 1.25rem; }
+.survival-panel.active { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+.tips-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+@media (max-width: 640px) { .tips-grid { grid-template-columns: 1fr; } }
+
+.tip-group {}
+.tip-group-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.tip-group-title.do   { color: #4ade80; }
+.tip-group-title.dont { color: #f87171; }
+.tip-group-title.evac { color: #fbbf24; }
+.tip-group-title.prep { color: #60a5fa; }
+
+.tip-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.tip-list li {
+    font-size: 0.82rem;
+    color: var(--muted);
+    padding: 0.45rem 0.65rem;
+    border-radius: 6px;
+    background: var(--surface2);
+    border-left: 3px solid transparent;
+    line-height: 1.4;
+    display: flex;
+    gap: 0.5rem;
+}
+.tip-list.do-list   li { border-left-color: #4ade80; }
+.tip-list.dont-list li { border-left-color: #f87171; }
+.tip-list.evac-list li { border-left-color: #fbbf24; }
+.tip-list.prep-list li { border-left-color: #60a5fa; }
+.tip-list li .tip-icon { flex-shrink: 0; }
+
+.evac-route {
+    background: rgba(251,191,36,0.06);
+    border: 1px solid rgba(251,191,36,0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.75rem;
+}
+.evac-route-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #fbbf24;
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.evac-steps { list-style: none; padding: 0; margin: 0; counter-reset: evac-counter; }
+.evac-steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.4;
+}
+.evac-steps li:last-child { border-bottom: none; }
+.evac-num {
+    width: 20px; height: 20px;
+    background: rgba(251,191,36,0.15);
+    color: #fbbf24;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.kit-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.5rem; margin-top: 0.5rem; }
+@media (max-width: 500px) { .kit-grid { grid-template-columns: repeat(2,1fr); } }
+.kit-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.65rem 0.4rem;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+}
+.kit-item .kit-icon { font-size: 1.3rem; }
+
+/* ── RESPONSIVE (additional) ── */
+@media (max-width: 768px) {
+    .hero-title { font-size: 1.5rem !important; }
+    .hero-icon { font-size: 1.8rem !important; }
+    .survival-tabs { gap: 0.3rem; padding: 0.75rem 1rem; }
+    .stab { font-size: 0.73rem; padding: 0.28rem 0.7rem; }
+    .tips-grid { grid-template-columns: 1fr; }
+    .kit-grid { grid-template-columns: repeat(3, 1fr); }
+    .action-row { flex-direction: column; }
+    .btn-action { width: 100%; text-align: center; }
+}
+@media (max-width: 480px) {
+    .kit-grid { grid-template-columns: repeat(2, 1fr); }
+    .hero-stat-value.big { font-size: 1.3rem; }
+    .evac-steps li { font-size: 0.78rem; }
+    .tip-list li { font-size: 0.78rem; }
+}
+
+/* ══════════════════════════════════════
+   PHOTO EVIDENCE SECTION
+══════════════════════════════════════ */
+.count-badge {
+    margin-left: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-weight: 400;
+    font-family: var(--font-body);
+}
+.photo-tabs {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    flex-wrap: wrap;
+}
+.ptab {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    color: var(--muted);
+    padding: 0.25rem 0.75rem;
+    font-size: 0.74rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-body);
+}
+.ptab:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.ptab.active { background: rgba(232,59,59,0.12); border-color: var(--accent); color: var(--text); }
+
+.photo-panel { display: none; padding: 0.85rem 1rem; }
+.photo-panel.active { display: block; }
+
+/* Smaller thumbnails — 5 cols, fixed small height */
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.4rem;
+}
+@media (max-width: 600px) { .photo-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 400px) { .photo-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.photo-thumb {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    cursor: zoom-in;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    transition: transform 0.15s, border-color 0.15s;
+}
+.photo-thumb:hover { transform: scale(1.04); border-color: rgba(255,255,255,0.25); }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb .thumb-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+.photo-thumb:hover .thumb-overlay { background: rgba(0,0,0,0.35); }
+.thumb-zoom-icon {
+    color: #fff;
+    font-size: 1rem;
+    opacity: 0;
+    transform: scale(0.7);
+    transition: all 0.15s;
+}
+.photo-thumb:hover .thumb-zoom-icon { opacity: 1; transform: scale(1); }
+.thumb-caption {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.75));
+    color: #fff;
+    font-size: 0.6rem;
+    padding: 0.5rem 0.3rem 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.no-photos {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    padding: 1.5rem 0;
+}
+
+/* Before / After comparison */
+.ba-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin: 0 1rem 0.85rem;
+}
+@media (max-width: 500px) { .ba-wrap { grid-template-columns: 1fr; } }
+.ba-pane { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.ba-label {
+    background: var(--surface2);
+    padding: 0.3rem 0.65rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+}
+.ba-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+
+/* Upload form */
+.photo-upload-form {
+    border-top: 1px solid var(--border);
+    padding: 0.75rem 1rem;
+    background: var(--surface2);
+}
+.photo-upload-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+.photo-upload-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.photo-upload-row input[type=file] {
+    flex: 1;
+    min-width: 120px;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    padding: 0.4rem 0.6rem;
+    font-size: 0.76rem;
+    cursor: pointer;
+}
+.photo-upload-row select,
+.photo-upload-row input[type=text] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 0.4rem 0.6rem;
+    font-size: 0.76rem;
+    cursor: pointer;
+    outline: none;
+}
+.photo-upload-row input[type=text] { flex: 1; min-width: 100px; }
+.photo-upload-row select:focus,
+.photo-upload-row input[type=text]:focus { border-color: var(--accent); }
+.upload-submit {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0.42rem 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+.upload-submit:hover { background: #c0392b; }
+
+/* Fullscreen Lightbox */
+.lightbox-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+}
+.lightbox-backdrop.open { display: flex; }
+.lightbox-img {
+    max-width: min(92vw, 1100px);
+    max-height: 82vh;
+    border-radius: 8px;
+    object-fit: contain;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+}
+.lightbox-close {
+    position: absolute;
+    top: 1rem; right: 1.25rem;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.1rem;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    z-index: 10000;
+}
+.lightbox-close:hover { background: rgba(255,255,255,0.2); }
+.lightbox-caption {
+    color: rgba(255,255,255,0.65);
+    font-size: 0.8rem;
+    text-align: center;
+    max-width: 600px;
+}
+.lightbox-nav {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    color: #fff;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background 0.15s;
+    z-index: 10000;
+}
+.lightbox-nav:hover { background: rgba(255,255,255,0.2); }
+.lightbox-prev { left: 1rem; }
+.lightbox-next { right: 1rem; }
+.lightbox-counter {
+    position: absolute;
+    top: 1rem; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.5);
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.65);
+}
+
+/* ══════════════════════════════════════
+   COMMUNITY UPDATES / COMMENTS SECTION
+══════════════════════════════════════ */
+.update-form {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+.update-form-header {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.update-form-row { display: flex; gap: 0.5rem; align-items: center; }
+.update-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: var(--font-body);
+}
+.update-input:focus { border-color: var(--accent); }
+.update-textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 0.6rem 0.75rem;
+    font-size: 0.82rem;
+    resize: vertical;
+    min-height: 72px;
+    max-height: 160px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+    font-family: var(--font-body);
+    line-height: 1.5;
+}
+.update-textarea:focus { border-color: var(--accent); }
+.update-form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+.char-count { font-size: 0.7rem; color: var(--muted); }
+.char-count.warn { color: #f87171; }
+.update-submit {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.45rem 1rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: var(--font-body);
+}
+.update-submit:hover { background: #c0392b; }
+
+/* Updates list */
+.updates-list { padding: 0; }
+.update-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.9rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+    transition: background 0.1s;
+}
+.update-item:last-child { border-bottom: none; }
+.update-item:hover { background: rgba(255,255,255,0.015); }
+.update-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e83b3b, #7c3aed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    font-family: var(--font-head);
+    margin-top: 1px;
+}
+.update-body { flex: 1; min-width: 0; }
+.update-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+    flex-wrap: wrap;
+}
+.update-author { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.update-time { font-size: 0.7rem; color: var(--muted); }
+.update-top-badge {
+    font-size: 0.62rem;
+    background: rgba(251,191,36,0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 10px;
+    padding: 0.1rem 0.45rem;
+    font-weight: 600;
+}
+.update-text {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.55;
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+}
+.upvote-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    padding: 0.22rem 0.65rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-body);
+    line-height: 1;
+}
+.upvote-btn:hover { border-color: var(--accent); color: var(--accent); }
+.upvote-btn.voted {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232,59,59,0.07);
+}
+.upvote-count { font-weight: 700; }
+
+.no-updates {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+    padding: 2rem 1rem;
+    line-height: 1.6;
+}
+.no-updates-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+
+{% endblock %}
+
+{% block content %}
+
+<a href="{% url 'view_disasters' %}" class="back-link">← Back to Disaster Reports</a>
+
+<div class="detail-hero" data-type="{{ disaster.disaster_type }}" style="--type-class: '{{ disaster.disaster_type|slugify }}';">
+    <div class="hero-top">
+        <div class="hero-type">
+            <div class="hero-icon">
+                {% if disaster.disaster_type == 'Fire' %}<i class="bi bi-fire" style="color:#fb923c;font-size:1.1rem;"></i>
+                {% elif disaster.disaster_type == 'Flood' %}<i class="bi bi-water" style="color:#38bdf8;font-size:1.1rem;"></i>
+                {% elif disaster.disaster_type == 'Earthquake' %}<i class="bi bi-globe-americas" style="color:#a78bfa;font-size:1.1rem;"></i>
+                {% elif disaster.disaster_type == 'Cyclone' %}<i class="bi bi-wind" style="color:#818cf8;font-size:1.1rem;"></i>
+                {% elif disaster.disaster_type == 'Tsunami' %}<i class="bi bi-water" style="color:#38bdf8;font-size:1.1rem;"></i>
+                {% elif disaster.disaster_type == 'Landslide' %}<i class="bi bi-mountain" style="color:#84cc16;font-size:1.1rem;"></i>
+                {% elif disaster.disaster_type == 'Accident' %}<i class="bi bi-car-front-fill" style="color:#fbbf24;font-size:1.1rem;"></i>
+                {% elif disaster.disaster_type == 'Industrial' %}<i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.0rem;"></i>
+                {% else %}<i class="bi bi-exclamation-triangle-fill" style="color:#94a3b8;font-size:1.1rem;"></i>{% endif %}
+            </div>
+            <div>
+                <div class="hero-title">{{ disaster.disaster_type }}</div>
+                <div class="hero-sub"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i> {{ disaster.location }}</div>
+            </div>
+        </div>
+        <span class="crowd-badge {{ disaster.crowd_level }}">{{ disaster.crowd_level_emoji }} {{ disaster.crowd_level }} Crowd</span>
+    </div>
+    <div class="hero-stats">
+        <div>
+            <div class="hero-stat-label">Estimated Affected</div>
+            <div class="hero-stat-value big">~{{ disaster.estimated_people|default:"N/A" }}</div>
+        </div>
+        <div>
+            <div class="hero-stat-label">Reported</div>
+            <div class="hero-stat-value">{{ disaster.reported_at|timesince }} ago</div>
+        </div>
+        <div>
+            <div class="hero-stat-label">Date &amp; Time</div>
+            <div class="hero-stat-value">{{ disaster.reported_at|date:"d M Y, H:i" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="detail-grid">
+
+    <div>
+        <div class="section-card">
+            <div class="section-header"><i class="bi bi-clock-fill" style="color:#94a3b8;font-size:1.1rem;"></i> Description</div>
+            <div class="section-body">
+                <div class="description-text">{{ disaster.description|linebreaksbr }}</div>
+            </div>
+        </div>
+
+
+        <!-- ══════════════════ FEATURE 8: PHOTO EVIDENCE ══════════════════ -->
+        <div class="section-card">
+            <div class="section-header">
+                <i class="bi bi-clock-fill" style="color:#94a3b8;font-size:1.1rem;"></i> Photo Evidence
+                <span class="count-badge">{{ photo_count }} photo{{ photo_count|pluralize }}</span>
+            </div>
+
+            <!-- Tabs -->
+            <div class="photo-tabs">
+                <button class="ptab active" onclick="showPhotoTab('all', this)">All ({{ photo_count }})</button>
+                <button class="ptab" onclick="showPhotoTab('before', this)">Before ({{ photos_before|length }})</button>
+                <button class="ptab" onclick="showPhotoTab('during', this)">During ({{ photos_during|length }})</button>
+                <button class="ptab" onclick="showPhotoTab('after', this)">After ({{ photos_after|length }})</button>
+            </div>
+
+            <!-- All -->
+            <div class="photo-panel active" id="ptab-all">
+                {% if photos %}
+                <div class="photo-grid" id="all-grid">
+                    {% for photo in photos %}
+                    <div class="photo-thumb" onclick="openLightbox({{ forloop.counter0 }}, 'all')" data-src="{{ photo.photo.url }}" data-caption="{{ photo.caption|default:photo.photo_type|capfirst }}">
+                        <img src="{{ photo.photo.url }}" alt="{{ photo.caption|default:'Disaster photo' }}" loading="lazy">
+                        <div class="thumb-overlay"><span class="thumb-zoom-icon"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i></span></div>
+                        {% if photo.caption %}<div class="thumb-caption">{{ photo.caption }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-photos"><i class="bi bi-camera-fill" style="color:#94a3b8;font-size:1.1rem;"></i> No photos uploaded yet — be the first to document this disaster.</div>
+                {% endif %}
+            </div>
+
+            <!-- Before -->
+            <div class="photo-panel" id="ptab-before">
+                {% if photos_before %}
+                <div class="photo-grid">
+                    {% for photo in photos_before %}
+                    <div class="photo-thumb" onclick="openLightboxSingle('{{ photo.photo.url }}', '{{ photo.caption|default:"Before" }}')" data-src="{{ photo.photo.url }}">
+                        <img src="{{ photo.photo.url }}" alt="Before" loading="lazy">
+                        <div class="thumb-overlay"><span class="thumb-zoom-icon"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i></span></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-photos">No "before" photos uploaded.</div>
+                {% endif %}
+            </div>
+
+            <!-- During -->
+            <div class="photo-panel" id="ptab-during">
+                {% if photos_during %}
+                <div class="photo-grid">
+                    {% for photo in photos_during %}
+                    <div class="photo-thumb" onclick="openLightboxSingle('{{ photo.photo.url }}', '{{ photo.caption|default:"During" }}')" data-src="{{ photo.photo.url }}">
+                        <img src="{{ photo.photo.url }}" alt="During" loading="lazy">
+                        <div class="thumb-overlay"><span class="thumb-zoom-icon"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i></span></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-photos">No "during" photos uploaded.</div>
+                {% endif %}
+            </div>
+
+            <!-- After -->
+            <div class="photo-panel" id="ptab-after">
+                {% if photos_after %}
+                <div class="photo-grid">
+                    {% for photo in photos_after %}
+                    <div class="photo-thumb" onclick="openLightboxSingle('{{ photo.photo.url }}', '{{ photo.caption|default:"After" }}')" data-src="{{ photo.photo.url }}">
+                        <img src="{{ photo.photo.url }}" alt="After" loading="lazy">
+                        <div class="thumb-overlay"><span class="thumb-zoom-icon"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i></span></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-photos">No "after" photos uploaded.</div>
+                {% endif %}
+            </div>
+
+            <!-- Before / After comparison -->
+            {% if photos_before and photos_after %}
+            <div style="border-top:1px solid var(--border);padding:0.85rem 1rem 0.85rem;">
+                <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.6rem;font-weight:600;">↔ Before / After Comparison</div>
+                <div class="ba-wrap">
+                    <div class="ba-pane">
+                        <div class="ba-label">Before</div>
+                        <img class="ba-img" src="{{ photos_before.0.photo.url }}" alt="Before" onclick="openLightboxSingle('{{ photos_before.0.photo.url }}', 'Before')" style="cursor:zoom-in;">
+                    </div>
+                    <div class="ba-pane">
+                        <div class="ba-label">After</div>
+                        <img class="ba-img" src="{{ photos_after.0.photo.url }}" alt="After" onclick="openLightboxSingle('{{ photos_after.0.photo.url }}', 'After')" style="cursor:zoom-in;">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Upload form -->
+            <form method="post" enctype="multipart/form-data" class="photo-upload-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="upload_photo">
+                <span class="photo-upload-label"><i class="bi bi-upload" style="color:#94a3b8;font-size:1.1rem;"></i> Add Photo</span>
+                <div class="photo-upload-row">
+                    <input type="file" name="photo" accept="image/*" required>
+                    <select name="photo_type">
+                        <option value="during">During</option>
+                        <option value="before">Before</option>
+                        <option value="after">After</option>
+                    </select>
+                    <input type="text" name="caption" placeholder="Caption (optional)" maxlength="200">
+                    <button type="submit" class="upload-submit">Upload</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Share Bar -->
+        <div class="section-card" style="margin-bottom:1.25rem;">
+            <div class="share-bar">
+                <span class="share-label"><i class="bi bi-share-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Share</span>
+                <a class="share-btn whatsapp" onclick="shareWhatsApp('{{ disaster.disaster_type }} reported at {{ disaster.location|escapejs }}. Stay alert!', window.location.href)">
+                    <i class="bi bi-whatsapp" style="color:#25d366;font-size:0.9rem;"></i>
+                    WhatsApp
+                </a>
+                <a class="share-btn twitter" onclick="shareTwitter('{{ disaster.disaster_type }} at {{ disaster.location|escapejs }} — reported on DisasterNet', window.location.href)">
+                    <i class="bi bi-twitter-x" style="color:#94a3b8;font-size:1.1rem;"></i>
+                    X / Twitter
+                </a>
+                <a class="share-btn copy" id="copy-btn" onclick="copyLink(window.location.href, this)"><i class="bi bi-share-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Copy Link</a>
+                {% if navigator_share %}
+                <a class="share-btn" onclick="nativeShare('{{ disaster.disaster_type }} — DisasterNet', '{{ disaster.disaster_type }} at {{ disaster.location|escapejs }}', window.location.href)"> Share</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Fullscreen Lightbox -->
+        <div class="lightbox-backdrop" id="lightbox" onclick="closeLightbox(event)">
+            <button class="lightbox-close" onclick="closeLightboxDirect()">✕</button>
+            <button class="lightbox-nav lightbox-prev" onclick="navigateLightbox(-1)">‹</button>
+            <img class="lightbox-img" id="lightbox-img" src="" alt="">
+            <button class="lightbox-nav lightbox-next" onclick="navigateLightbox(1)">›</button>
+            <div class="lightbox-caption" id="lightbox-caption"></div>
+            <div class="lightbox-counter" id="lightbox-counter"></div>
+        </div>
+
+
+        <!-- ══════════════════ FEATURE 7: COMMUNITY UPDATES ══════════════════ -->
+        <div class="section-card">
+            <div class="section-header">
+                <i class="bi bi-chat-left-text-fill" style="color:#a78bfa;font-size:1.1rem;"></i> Community Updates
+                <span class="count-badge">{{ update_count }}</span>
+            </div>
+
+            <!-- Post form -->
+            <form method="post" class="update-form" id="update-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="post_update">
+                <div class="update-form-header">Share an update</div>
+                <div class="update-form-row">
+                    <input type="text" name="author_name" class="update-input" placeholder="Your name (optional — defaults to Anonymous)" maxlength="100">
+                </div>
+                <textarea name="content" class="update-textarea" placeholder="Share what you know — road conditions, rescue status, affected areas, shelter info…" maxlength="500" id="update-content" oninput="updateCharCount(this)"></textarea>
+                <div class="update-form-footer">
+                    <span class="char-count" id="char-count">0 / 500</span>
+                    <button type="submit" class="update-submit"><i class="bi bi-pencil-fill" style="color:#fbbf24;font-size:1.1rem;"></i> Post Update</button>
+                </div>
+            </form>
+
+            <!-- Updates list -->
+            <div class="updates-list">
+                {% if updates %}
+                    {% for u in updates %}
+                    <div class="update-item">
+                        <div class="update-avatar">{{ u.author_name|first|upper }}</div>
+                        <div class="update-body">
+                            <div class="update-meta">
+                                <span class="update-author">{{ u.author_name }}</span>
+                                <span class="update-time">{{ u.reported_at|timesince }} ago</span>
+                                {% if u.upvotes >= 3 %}
+                                <span class="update-top-badge">⭐ Top</span>
+                                {% endif %}
+                            </div>
+                            <div class="update-text">{{ u.content }}</div>
+                            <button class="upvote-btn" onclick="upvote({{ u.pk }}, this)">
+                                <i class="bi bi-hand-thumbs-up-fill" style="color:#4ade80;font-size:1.1rem;"></i> <span class="upvote-count">{{ u.upvotes }}</span> Helpful
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="no-updates">
+                    <div class="no-updates-icon"><i class="bi bi-chat-left-text-fill" style="color:#a78bfa;font-size:1.1rem;"></i></div>
+                    No updates yet.<br>
+                    <span style="font-size:0.78rem;">Be the first to share on-ground information.</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i> Location</div>
+            <div class="section-body">
+                <div class="info-row">
+                    <span class="info-icon"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i></span>
+                    <div><div class="info-label">Address</div><div class="info-value">{{ disaster.location }}</div></div>
+                </div>
+                {% if disaster.latitude and disaster.longitude %}
+                <div class="info-row">
+                    <span class="info-icon"><i class="bi bi-info-circle-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>
+                    <div><div class="info-label">Coordinates</div><div class="info-value">{{ disaster.latitude|floatformat:5 }}, {{ disaster.longitude|floatformat:5 }}</div></div>
+                </div>
+                {% endif %}
+                <div class="info-row">
+                    <span class="info-icon"><i class="bi bi-people-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>
+                    <div><div class="info-label">People in Area</div><div class="info-value">~{{ disaster.estimated_people|default:"Unknown" }}</div></div>
+                </div>
+                {% if disaster.latitude and disaster.longitude %}
+                <div style="margin-top:1rem;"><div id="detail-map"></div></div>
+                {% else %}
+                <div class="no-location" style="margin-top:1rem;"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i> No coordinates available</div>
+                {% endif %}
+            </div>
+        </div>
+
+
+        <!-- ── SURVIVAL GUIDE ── -->
+        <div class="section-card survival-section">
+            <div class="section-header"><i class="bi bi-check-circle-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Survival Guide &amp; Evacuation</div>
+
+            <!-- Tab bar -->
+            <div class="survival-tabs">
+                <button class="stab active" onclick="showTab('dos', event)"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Do's</button>
+                <button class="stab" onclick="showTab('donts', event)"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Don'ts</button>
+                <button class="stab" onclick="showTab('evac', event)"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Evacuation</button>
+                <button class="stab" onclick="showTab('kit', event)"><i class="bi bi-bag-plus-fill" style="color:#a78bfa;font-size:1.1rem;"></i> Emergency Kit</button>
+            </div>
+
+            <!-- ════════ FIRE ════════ -->
+            {% if disaster.disaster_type == 'Fire' %}
+
+            <div class="survival-panel active" id="panel-dos">
+                <div class="tips-grid">
+                    <div class="tip-group">
+                        <div class="tip-group-title do"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Do This</div>
+                        <ul class="tip-list do-list">
+                            <li><span class="tip-icon"><i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Activate fire alarm and alert everyone immediately</li>
+                            <li><span class="tip-icon"><i class="bi bi-person-lines-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Feel doors with the back of your hand before opening</li>
+                            <li><span class="tip-icon"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Crawl low under smoke — air is cleaner near the floor</li>
+                            <li><span class="tip-icon"><i class="bi bi-person-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Cover nose and mouth with a damp cloth</li>
+                            <li><span class="tip-icon"><i class="bi bi-sun-fill" style="color:#38bdf8;font-size:1.1rem;"></i></span>Use stairs, never elevators during a fire</li>
+                            <li><span class="tip-icon"><i class="bi bi-compass-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Call 101 (Fire Brigade) once safely outside</li>
+                        </ul>
+                    </div>
+                    <div class="tip-group">
+                        <div class="tip-group-title dont"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Never Do</div>
+                        <ul class="tip-list dont-list">
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never open a hot door — fire may be behind it</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never use the elevator during a fire</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never go back inside to retrieve belongings</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never hide in closets or under beds</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never waste time dressing — leave immediately</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never open windows — this feeds oxygen to the fire</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-donts">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> Critical Reminders</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">!</span>If clothes catch fire — STOP, DROP, and ROLL on the ground</li>
+                        <li><span class="evac-num">!</span>If trapped, seal door gaps with clothing to block smoke</li>
+                        <li><span class="evac-num">!</span>Signal from a window — do not jump from high floors</li>
+                        <li><span class="evac-num">!</span>Do not re-enter until Fire Brigade declares it safe</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-evac">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Fire Evacuation Steps</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">1</span>Activate fire alarm — warn everyone on your floor</li>
+                        <li><span class="evac-num">2</span>Close all doors behind you to contain the fire</li>
+                        <li><span class="evac-num">3</span>Use the nearest emergency stairwell — stay right</li>
+                        <li><span class="evac-num">4</span>Crawl if smoke is visible; breathe through cloth</li>
+                        <li><span class="evac-num">5</span>Proceed to designated Assembly Point outside</li>
+                        <li><span class="evac-num">6</span>Do a headcount — report anyone missing to Fire Brigade</li>
+                        <li><span class="evac-num">7</span>Stay 50m away from the building</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-kit">
+                <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem;">Keep this kit ready near exits at home and workplace:</p>
+                <div class="kit-grid">
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-fire" style="color:#fb923c;font-size:1.1rem;"></i></span>Fire Extinguisher</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-check-circle-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Smoke Mask</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-lightning-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Flashlight</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-shield-plus" style="color:#f87171;font-size:1.1rem;"></i></span>First Aid Kit</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Water Bottle</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-clock-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Emergency Contacts</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-clipboard2-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Fire Blanket</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-arrow-right" style="color:#94a3b8;font-size:1.1rem;"></i></span>Escape Ladder</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-wifi" style="color:#fbbf24;font-size:1.1rem;"></i></span>Spare Keys</div>
+                </div>
+            </div>
+
+            <!-- ════════ FLOOD ════════ -->
+            {% elif disaster.disaster_type == 'Flood' %}
+
+            <div class="survival-panel active" id="panel-dos">
+                <div class="tips-grid">
+                    <div class="tip-group">
+                        <div class="tip-group-title do"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Do This</div>
+                        <ul class="tip-list do-list">
+                            <li><span class="tip-icon"><i class="bi bi-chevron-up" style="color:#60a5fa;font-size:1.1rem;"></i></span>Move immediately to higher ground or upper floors</li>
+                            <li><span class="tip-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Monitor weather radio and official alerts</li>
+                            <li><span class="tip-icon"><i class="bi bi-water" style="color:#fbbf24;font-size:1.1rem;"></i></span>Turn off electricity at the main breaker if flooding is near</li>
+                            <li><span class="tip-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Store clean drinking water before power goes out</li>
+                            <li><span class="tip-icon"><i class="bi bi-box-seam-fill" style="color:#a78bfa;font-size:1.1rem;"></i></span>Pack essential documents in waterproof bags</li>
+                            <li><span class="tip-icon"><i class="bi bi-house-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Seal doors and windows with sandbags if time allows</li>
+                        </ul>
+                    </div>
+                    <div class="tip-group">
+                        <div class="tip-group-title dont"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Never Do</div>
+                        <ul class="tip-list dont-list">
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never walk through moving floodwater — 15cm can knock you over</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never drive through a flooded road</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never touch electrical equipment in wet areas</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never drink floodwater — it's heavily contaminated</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never return home until authorities confirm it is safe</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never ignore evacuation orders</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-donts">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> Critical Reminders</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">!</span>If swept away — float on your back, feet downstream</li>
+                        <li><span class="evac-num">!</span>Boil all water before drinking even after flooding recedes</li>
+                        <li><span class="evac-num">!</span>Watch for downed power lines in floodwater</li>
+                        <li><span class="evac-num">!</span>Beware of snakes and insects displaced by floodwater</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-evac">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Flood Evacuation Steps</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">1</span>Monitor official flood alerts — act before water rises</li>
+                        <li><span class="evac-num">2</span>Move to highest floor or rooftop if stranded indoors</li>
+                        <li><span class="evac-num">3</span>Use designated evacuation routes — avoid flooded roads</li>
+                        <li><span class="evac-num">4</span>Carry emergency kit, documents, medicines</li>
+                        <li><span class="evac-num">5</span>Reach government relief camps or elevated shelters</li>
+                        <li><span class="evac-num">6</span>If trapped on roof — signal with bright cloth for rescue boats</li>
+                        <li><span class="evac-num">7</span>Register at relief camp so family can locate you</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-kit">
+                <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem;">Flood emergency kit — keep in waterproof bag:</p>
+                <div class="kit-grid">
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#38bdf8;font-size:1.1rem;"></i></span>Life Jacket</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Drinking Water</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-box-seam-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Dry Food (3 days)</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-shield-plus" style="color:#f87171;font-size:1.1rem;"></i></span>Medicines</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-bag-dash-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Waterproof Documents</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-lightning-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Waterproof Torch</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Battery Radio</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-share-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Rope (10m)</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-flask-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Water Purification</div>
+                </div>
+            </div>
+
+            <!-- ════════ EARTHQUAKE ════════ -->
+            {% elif disaster.disaster_type == 'Earthquake' %}
+
+            <div class="survival-panel active" id="panel-dos">
+                <div class="tips-grid">
+                    <div class="tip-group">
+                        <div class="tip-group-title do"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Do This</div>
+                        <ul class="tip-list do-list">
+                            <li><span class="tip-icon"><i class="bi bi-hdd-network-fill" style="color:#f87171;font-size:1.1rem;"></i></span>DROP, COVER, and HOLD ON immediately</li>
+                            <li><span class="tip-icon"><i class="bi bi-box-seam-fill" style="color:#a78bfa;font-size:1.1rem;"></i></span>Take cover under a sturdy desk or table</li>
+                            <li><span class="tip-icon"><i class="bi bi-columns-gap" style="color:#94a3b8;font-size:1.1rem;"></i></span>If no table, crouch against an interior wall</li>
+                            <li><span class="tip-icon"><i class="bi bi-dot" style="color:#fbbf24;font-size:1.8rem;"></i></span>Cover your head and neck with both arms</li>
+                            <li><span class="tip-icon"><i class="bi bi-diagram-3-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Stay indoors until shaking completely stops</li>
+                            <li><span class="tip-icon"><i class="bi bi-droplet-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Wear shoes immediately — broken glass is everywhere</li>
+                        </ul>
+                    </div>
+                    <div class="tip-group">
+                        <div class="tip-group-title dont"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Never Do</div>
+                        <ul class="tip-list dont-list">
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never run outside during shaking — debris falls then</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never stand in a doorway — it offers no extra protection</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never use elevators after an earthquake</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never use open flames — gas leaks may be present</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never re-enter damaged buildings</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never ignore aftershocks — drop and cover again</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-donts">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> After the Shaking Stops</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">!</span>Check for gas leaks — if smelled, open windows and evacuate</li>
+                        <li><span class="evac-num">!</span>Do not use matches or lighters until gas leak is ruled out</li>
+                        <li><span class="evac-num">!</span>Expect aftershocks — they can be as strong as the main quake</li>
+                        <li><span class="evac-num">!</span>If near coast, move inland immediately — tsunami risk</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-evac">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Earthquake Evacuation Steps</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">1</span>Wait until shaking completely stops before moving</li>
+                        <li><span class="evac-num">2</span>Check yourself and others for injuries before evacuating</li>
+                        <li><span class="evac-num">3</span>Use stairs only — check each step before putting weight on it</li>
+                        <li><span class="evac-num">4</span>Stay away from buildings, power lines, and trees outside</li>
+                        <li><span class="evac-num">5</span>Move to an open area away from structures</li>
+                        <li><span class="evac-num">6</span>If near coast, immediately move to high ground (tsunami risk)</li>
+                        <li><span class="evac-num">7</span>Listen to NDRF/official instructions on battery radio</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-kit">
+                <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem;">Earthquake preparedness kit:</p>
+                <div class="kit-grid">
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-check-circle-fill" style="color:#f59e0b;font-size:1.1rem;"></i></span>Hard Hat / Helmet</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-droplet-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Sturdy Shoes</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-tools" style="color:#94a3b8;font-size:1.1rem;"></i></span>Tool Kit</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-shield-plus" style="color:#f87171;font-size:1.1rem;"></i></span>First Aid Kit</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Water (7 days)</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-box-seam-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Food (7 days)</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Battery Radio</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-lightning-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Flashlight</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-check-circle-fill" style="color:#84cc16;font-size:1.1rem;"></i></span>Work Gloves</div>
+                </div>
+            </div>
+
+            <!-- ════════ CYCLONE ════════ -->
+            {% elif disaster.disaster_type == 'Cyclone' %}
+
+            <div class="survival-panel active" id="panel-dos">
+                <div class="tips-grid">
+                    <div class="tip-group">
+                        <div class="tip-group-title do"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Do This</div>
+                        <ul class="tip-list do-list">
+                            <li><span class="tip-icon"><i class="bi bi-house-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Stay indoors in the strongest part of the building</li>
+                            <li><span class="tip-icon"><i class="bi bi-building-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Board up or tape all windows and glass doors</li>
+                            <li><span class="tip-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Monitor NDRF cyclone warnings continuously</li>
+                            <li><span class="tip-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Store large amounts of clean water before cyclone hits</li>
+                            <li><span class="tip-icon"><i class="bi bi-battery-full" style="color:#94a3b8;font-size:1.1rem;"></i></span>Charge all devices; stock batteries and candles</li>
+                            <li><span class="tip-icon"><i class="bi bi-house-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Evacuate immediately if in a weak or flood-prone structure</li>
+                        </ul>
+                    </div>
+                    <div class="tip-group">
+                        <div class="tip-group-title dont"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Never Do</div>
+                        <ul class="tip-list dont-list">
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never go outside during the eye of the cyclone — it will return</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never shelter under trees or near power lines</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never ignore evacuation orders from authorities</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never use candles near gas appliances</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never touch downed power lines after the storm</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-donts">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> Critical Reminders</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">!</span>The eye of the cyclone brings brief calm — stay sheltered</li>
+                        <li><span class="evac-num">!</span>Storm surges can be more deadly than the wind itself</li>
+                        <li><span class="evac-num">!</span>Wait for official all-clear before venturing outside</li>
+                        <li><span class="evac-num">!</span>Beware of flooding and landslides after the cyclone passes</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-evac">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Cyclone Evacuation Steps</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">1</span>Follow evacuation order immediately when issued</li>
+                        <li><span class="evac-num">2</span>Use designated cyclone shelter routes — avoid coastal roads</li>
+                        <li><span class="evac-num">3</span>Move inland and to higher ground away from coast</li>
+                        <li><span class="evac-num">4</span>Carry emergency kit, medicines, and documents</li>
+                        <li><span class="evac-num">5</span>Register at the cyclone shelter with your family details</li>
+                        <li><span class="evac-num">6</span>Do not return home until NDRF confirms the all-clear</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-kit">
+                <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem;">Cyclone preparedness kit:</p>
+                <div class="kit-grid">
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Water (5 days)</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-box-seam-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Canned Food</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Battery Radio</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-lightning-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Candles &amp; Lighter</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-battery-full" style="color:#94a3b8;font-size:1.1rem;"></i></span>Spare Batteries</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-shield-plus" style="color:#f87171;font-size:1.1rem;"></i></span>Medicines</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-building-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Tape for Windows</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-bag-dash-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Documents Copy</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-box-seam-fill" style="color:#a78bfa;font-size:1.1rem;"></i></span>Go Bag (packed)</div>
+                </div>
+            </div>
+
+            <!-- ════════ TSUNAMI ════════ -->
+            {% elif disaster.disaster_type == 'Tsunami' %}
+
+            <div class="survival-panel active" id="panel-dos">
+                <div class="tips-grid">
+                    <div class="tip-group">
+                        <div class="tip-group-title do"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Do This</div>
+                        <ul class="tip-list do-list">
+                            <li><span class="tip-icon"><i class="bi bi-person-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Run inland and uphill IMMEDIATELY — every second counts</li>
+                            <li><span class="tip-icon"><i class="bi bi-chevron-up" style="color:#60a5fa;font-size:1.1rem;"></i></span>Get to at least 30m above sea level or 3km inland</li>
+                            <li><span class="tip-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Listen for official Tsunami Warning sirens</li>
+                            <li><span class="tip-icon"><i class="bi bi-water" style="color:#38bdf8;font-size:1.1rem;"></i></span>If ocean suddenly recedes, run — a large wave is coming</li>
+                            <li><span class="tip-icon"><i class="bi bi-tree-fill" style="color:#84cc16;font-size:1.1rem;"></i></span>If you cannot reach high ground, climb a strong tree</li>
+                            <li><span class="tip-icon"><i class="bi bi-building-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Or reach the highest floor of a reinforced concrete building</li>
+                        </ul>
+                    </div>
+                    <div class="tip-group">
+                        <div class="tip-group-title dont"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Never Do</div>
+                        <ul class="tip-list dont-list">
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never go to the beach to watch the wave</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never assume one wave means it is over — many waves follow</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never return to the coast until all-clear is given</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never drive away unless roads are above tsunami zone</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never wait to see the wave before evacuating</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-donts">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> Warning Signs</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">!</span>Strong earthquake near the coast → immediate tsunami risk</li>
+                        <li><span class="evac-num">!</span>Ocean rapidly receding = tsunami incoming — RUN NOW</li>
+                        <li><span class="evac-num">!</span>Unusual roaring sound from the ocean = evacuate immediately</li>
+                        <li><span class="evac-num">!</span>Multiple waves will hit — wait hours before returning</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-evac">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Tsunami Evacuation Steps</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">1</span>On any warning sign — run inland immediately, no hesitation</li>
+                        <li><span class="evac-num">2</span>Follow Tsunami Evacuation Route signs (blue arrows)</li>
+                        <li><span class="evac-num">3</span>Go on foot if roads are gridlocked — it is faster</li>
+                        <li><span class="evac-num">4</span>Reach high ground (30m+) or reinforced multi-storey building</li>
+                        <li><span class="evac-num">5</span>Stay until official all-clear from authorities</li>
+                        <li><span class="evac-num">6</span>Tsunami series can continue for 8+ hours</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-kit">
+                <div class="kit-grid">
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#38bdf8;font-size:1.1rem;"></i></span>Life Jacket</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Water</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Emergency Radio</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-lightning-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Torch</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-person-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Good Running Shoes</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-bag-dash-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Waterproof Documents</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-shield-plus" style="color:#f87171;font-size:1.1rem;"></i></span>First Aid</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-share-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Rope</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-box-seam-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Emergency Food</div>
+                </div>
+            </div>
+
+            <!-- ════════ LANDSLIDE ════════ -->
+            {% elif disaster.disaster_type == 'Landslide' %}
+
+            <div class="survival-panel active" id="panel-dos">
+                <div class="tips-grid">
+                    <div class="tip-group">
+                        <div class="tip-group-title do"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Do This</div>
+                        <ul class="tip-list do-list">
+                            <li><span class="tip-icon"><i class="bi bi-person-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Move away from the slope path as fast as possible</li>
+                            <li><span class="tip-icon"><i class="bi bi-tree-fill" style="color:#84cc16;font-size:1.1rem;"></i></span>Move to the side of a landslide's path, not uphill</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Listen for unusual sounds — cracking trees, rumbling ground</li>
+                            <li><span class="tip-icon"><i class="bi bi-house-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Evacuate if you hear authorities issue warnings</li>
+                            <li><span class="tip-icon"><i class="bi bi-lightning-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Watch for tilting trees, moving soil, cracked ground</li>
+                            <li><span class="tip-icon"><i class="bi bi-compass-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Report landslides to NDRF — others may be trapped</li>
+                        </ul>
+                    </div>
+                    <div class="tip-group">
+                        <div class="tip-group-title dont"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Never Do</div>
+                        <ul class="tip-list dont-list">
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never drive through landslide debris on roads</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never re-enter the landslide area — secondary slides follow</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never camp near steep slopes during heavy rain</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never assume one slide means the slope is now stable</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-donts">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> If Buried in Debris</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">!</span>Cover your mouth with a cloth to avoid dust inhalation</li>
+                        <li><span class="evac-num">!</span>Tap on pipes or walls to signal rescuers — avoid shouting</li>
+                        <li><span class="evac-num">!</span>Conserve energy — rescuers will use sound detectors</li>
+                        <li><span class="evac-num">!</span>Try to create a small air pocket around your face</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-evac">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Landslide Evacuation Steps</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">1</span>Move perpendicular to the slide path — not uphill</li>
+                        <li><span class="evac-num">2</span>Reach flat, open ground away from valleys</li>
+                        <li><span class="evac-num">3</span>Avoid river banks — debris flows travel in channels</li>
+                        <li><span class="evac-num">4</span>Use alternate roads — landslides block main routes</li>
+                        <li><span class="evac-num">5</span>Alert NDRF and local police about blockages</li>
+                        <li><span class="evac-num">6</span>Do not return until geologists confirm slope stability</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-kit">
+                <div class="kit-grid">
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-check-circle-fill" style="color:#f59e0b;font-size:1.1rem;"></i></span>Helmet</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-check-circle-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Dust Mask</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-droplet-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Sturdy Boots</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-lightning-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Torch</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-share-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Rope (15m)</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-shield-plus" style="color:#f87171;font-size:1.1rem;"></i></span>First Aid</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Radio</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Water</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-tsunami" style="color:#94a3b8;font-size:1.1rem;"></i></span>Work Gloves</div>
+                </div>
+            </div>
+
+            <!-- ════════ CHEMICAL SPILL ════════ -->
+            {% elif disaster.disaster_type == 'Chemical Spill' %}
+
+            <div class="survival-panel active" id="panel-dos">
+                <div class="tips-grid">
+                    <div class="tip-group">
+                        <div class="tip-group-title do"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Do This</div>
+                        <ul class="tip-list do-list">
+                            <li><span class="tip-icon"><i class="bi bi-person-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Evacuate upwind and uphill from the spill immediately</li>
+                            <li><span class="tip-icon"><i class="bi bi-check-circle-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Cover nose and mouth with a damp cloth — move quickly</li>
+                            <li><span class="tip-icon"><i class="bi bi-person-lines-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Seal windows and doors if sheltering indoors</li>
+                            <li><span class="tip-icon"><i class="bi bi-compass-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Call 1800-180-5522 (NDMA Chemical Helpline) or 112</li>
+                            <li><span class="tip-icon"><i class="bi bi-person-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Remove contaminated clothing immediately — bag it</li>
+                            <li><span class="tip-icon"><i class="bi bi-sun-fill" style="color:#38bdf8;font-size:1.1rem;"></i></span>Wash exposed skin with large amounts of water</li>
+                        </ul>
+                    </div>
+                    <div class="tip-group">
+                        <div class="tip-group-title dont"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Never Do</div>
+                        <ul class="tip-list dont-list">
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never go downwind of the spill — fumes travel fast</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never touch spilled chemicals with bare skin</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never eat, drink or smoke near contaminated area</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never return to area until hazmat team gives all-clear</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never use flames near unknown chemicals — may be flammable</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-donts">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> Critical Reminders</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">!</span>If eyes exposed — flush with clean water for 15+ minutes</li>
+                        <li><span class="evac-num">!</span>Do not induce vomiting if chemical was ingested — call 112</li>
+                        <li><span class="evac-num">!</span>Symptoms may be delayed — seek medical attention even if feeling fine</li>
+                        <li><span class="evac-num">!</span>Inform responders exactly what chemical was involved</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-evac">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Chemical Spill Evacuation</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">1</span>Move immediately upwind — away from visible fumes or smoke</li>
+                        <li><span class="evac-num">2</span>Alert others in the area without touching contaminated persons</li>
+                        <li><span class="evac-num">3</span>Call emergency services — describe the chemical if known</li>
+                        <li><span class="evac-num">4</span>Reach designated decontamination zone set up by hazmat team</li>
+                        <li><span class="evac-num">5</span>Remove and bag all clothing; shower thoroughly</li>
+                        <li><span class="evac-num">6</span>Await medical screening even without visible symptoms</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-kit">
+                <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem;">Chemical emergency preparedness kit:</p>
+                <div class="kit-grid">
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-check-circle-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Respirator Mask</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-check-circle-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Safety Goggles</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-tsunami" style="color:#94a3b8;font-size:1.1rem;"></i></span>Rubber Gloves</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-clipboard2-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Protective Suit</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Water (eye wash)</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-flask-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Decontamination Kit</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-shield-plus" style="color:#f87171;font-size:1.1rem;"></i></span>First Aid Kit</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-bag-dash-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Emergency Contacts</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Battery Radio</div>
+                </div>
+            </div>
+
+
+            <!-- ════════ ACCIDENT / INDUSTRIAL / OTHER ════════ -->
+            {% else %}
+
+            <div class="survival-panel active" id="panel-dos">
+                <div class="tips-grid">
+                    <div class="tip-group">
+                        <div class="tip-group-title do"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> Do This</div>
+                        <ul class="tip-list do-list">
+                            <li><span class="tip-icon"><i class="bi bi-compass-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>Call emergency services immediately — 112</li>
+                            <li><span class="tip-icon"><i class="bi bi-person-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Move away from danger zone without putting yourself at risk</li>
+                            <li><span class="tip-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i></span>Create a safety perimeter — keep bystanders back</li>
+                            <li><span class="tip-icon"><i class="bi bi-bandaid-fill" style="color:#fb923c;font-size:1.1rem;"></i></span>Provide first aid to injured if it is safe to do so</li>
+                            <li><span class="tip-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Follow official instructions and emergency broadcasts</li>
+                            <li><span class="tip-icon"><i class="bi bi-tsunami" style="color:#4ade80;font-size:1.1rem;"></i></span>Cooperate with emergency responders fully</li>
+                        </ul>
+                    </div>
+                    <div class="tip-group">
+                        <div class="tip-group-title dont"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i> Never Do</div>
+                        <ul class="tip-list dont-list">
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never put yourself in danger to help others</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never photograph the scene if it delays helping</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never move injured persons unless there is immediate danger</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never block access roads for emergency vehicles</li>
+                            <li><span class="tip-icon"><i class="bi bi-x-circle-fill" style="color:#f87171;font-size:1.1rem;"></i></span>Never spread unverified information online</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-donts">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> General Reminders</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">!</span>Your safety comes first — do not become a casualty yourself</li>
+                        <li><span class="evac-num">!</span>Always follow official emergency authority instructions</li>
+                        <li><span class="evac-num">!</span>Document the incident (photos, notes) for authorities</li>
+                        <li><span class="evac-num">!</span>Check on neighbours and vulnerable persons nearby</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-evac">
+                <div class="evac-route">
+                    <div class="evac-route-title"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> General Evacuation Steps</div>
+                    <ul class="evac-steps">
+                        <li><span class="evac-num">1</span>Alert everyone in the immediate area of the danger</li>
+                        <li><span class="evac-num">2</span>Call 112 — describe your location and situation clearly</li>
+                        <li><span class="evac-num">3</span>Move away from the scene via the safest available route</li>
+                        <li><span class="evac-num">4</span>Gather at a designated assembly point</li>
+                        <li><span class="evac-num">5</span>Account for all members of your group</li>
+                        <li><span class="evac-num">6</span>Wait for and follow all official instructions</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="survival-panel" id="panel-kit">
+                <div class="kit-grid">
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-shield-plus" style="color:#f87171;font-size:1.1rem;"></i></span>First Aid Kit</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-globe" style="color:#38bdf8;font-size:1.1rem;"></i></span>Water</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-lightning-fill" style="color:#fbbf24;font-size:1.1rem;"></i></span>Torch</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-list-ul" style="color:#94a3b8;font-size:1.1rem;"></i></span>Radio</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-bag-dash-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Documents</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-battery-full" style="color:#94a3b8;font-size:1.1rem;"></i></span>Power Bank</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-box-seam-fill" style="color:#4ade80;font-size:1.1rem;"></i></span>Food</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-clipboard2-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Warm Clothing</div>
+                    <div class="kit-item"><span class="kit-icon"><i class="bi bi-share-fill" style="color:#94a3b8;font-size:1.1rem;"></i></span>Rope</div>
+                </div>
+            </div>
+
+            {% endif %}
+        </div>
+
+        <div class="action-row">
+            <a href="{% url 'report_missing' %}" class="btn-action"><i class="bi bi-search" style="color:#94a3b8;font-size:1rem;"></i> Report Missing</a>
+            <a href="{% url 'report_injured' %}" class="btn-action"><i class="bi-clipboard2-pulse-fill" style="color:#f87171;font-size:1rem;"></i> Report Injury</a>
+            <a href="{% url 'donate' %}" class="btn-action primary"><i class="bi bi-suit-heart-fill" style="color:#fbbf24;font-size:1rem;"></i> Donate Relief</a>
+            <a href="{% url 'feedback' %}?content_type=disaster&object_id={{ disaster.pk }}&next={{ request.path }}" class="btn-action" style="flex:0 0 auto;"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1rem;"></i> Flag Issue</a>
+        </div>
+    </div>
+
+    <div>
+        <div class="section-card">
+            <div class="section-header"><i class="bi bi-diagram-3-fill" style="color:#fbbf24;font-size:1.1rem;"></i> Incident Info</div>
+            <div class="section-body" style="padding:0.75rem 1.25rem;">
+                <div class="info-row">
+                    <span class="info-icon"><i class="bi bi-globe-americas" style="color:#a78bfa;font-size:1.1rem;"></i></span>
+                    <div><div class="info-label">Type</div><div class="info-value">{{ disaster.disaster_type }}</div></div>
+                </div>
+                <div class="info-row">
+                    <span class="info-icon"><i class="bi bi-bar-chart-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>
+                    <div><div class="info-label">Crowd Level</div><div class="info-value">{{ disaster.crowd_level_emoji }} {{ disaster.crowd_level }}</div></div>
+                </div>
+                <div class="info-row">
+                    <span class="info-icon"><i class="bi bi-clock-history" style="color:#94a3b8;font-size:1.1rem;"></i></span>
+                    <div><div class="info-label">Reported At</div><div class="info-value">{{ disaster.reported_at|date:"d M Y, H:i" }}</div></div>
+                </div>
+                <div class="info-row">
+                    <span class="info-icon">🆔</span>
+                    <div><div class="info-label">Report ID</div><div class="info-value" style="font-family:monospace;">#{{ disaster.pk|stringformat:"05d" }}</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i> Emergency Contacts</div>
+            <div class="section-body">
+                <div class="emergency-grid">
+                    <a href="tel:112" class="emergency-btn"><span class="e-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i></span><div><div class="e-num">112</div><div class="e-label">Emergency</div></div></a>
+                    <a href="tel:108" class="emergency-btn"><span class="e-icon"><i class="bi bi-car-front-fill" style="color:#86efac;font-size:1.1rem;"></i></span><div><div class="e-num">108</div><div class="e-label">Ambulance</div></div></a>
+                    <a href="tel:100" class="emergency-btn"><span class="e-icon"><i class="bi bi-check-circle-fill" style="color:#93c5fd;font-size:1.1rem;"></i></span><div><div class="e-num">100</div><div class="e-label">Police</div></div></a>
+                    <a href="tel:101" class="emergency-btn"><span class="e-icon"><i class="bi bi-fire" style="color:#fb923c;font-size:1.1rem;"></i></span><div><div class="e-num">101</div><div class="e-label">Fire Brigade</div></div></a>
+                    <a href="tel:1078" class="emergency-btn"><span class="e-icon"><i class="bi bi-water" style="color:#38bdf8;font-size:1.1rem;"></i></span><div><div class="e-num">1078</div><div class="e-label">NDRF</div></div></a>
+                    <a href="tel:1070" class="emergency-btn"><span class="e-icon"><i class="bi bi-building-fill" style="color:#f87171;font-size:1.1rem;"></i></span><div><div class="e-num">1070</div><div class="e-label">Disaster Control</div></div></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header"><i class="bi bi-share-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Related</div>
+            <div class="section-body" style="padding:0.75rem;">
+                <a href="{% url 'view_missing' %}" class="related-link"><i class="bi bi-search" style="color:#94a3b8;font-size:1.1rem;"></i> <span>Missing Persons</span> <span style="margin-left:auto;">›</span></a>
+                <a href="{% url 'view_injured' %}" class="related-link"><i class="bi bi-clipboard-plus-fill" style="color:#fb923c;font-size:1.1rem;"></i> <span>Injured Persons</span> <span style="margin-left:auto;">›</span></a>
+                <a href="{% url 'view_disasters' %}" class="related-link"><i class="bi bi-globe-americas" style="color:#a78bfa;font-size:1.1rem;"></i> <span>All Disasters</span> <span style="margin-left:auto;">›</span></a>
+                <a href="{% url 'admin_dashboard' %}" class="related-link"><i class="bi bi-gear-fill" style="color:#94a3b8;font-size:1.1rem;"></i> <span>Dashboard</span> <span style="margin-left:auto;">›</span></a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set disaster type class on hero from data attribute (handles spaces in type names)
+(function() {
+    const hero = document.querySelector('.detail-hero[data-type]');
+    if (hero) {
+        const t = hero.dataset.type.replace(/\s+/g, '-');
+        hero.classList.add(t);
+        // Also add original for exact CSS match
+        const orig = hero.dataset.type;
+        if (!orig.includes(' ')) hero.classList.add(orig);
+    }
+})();
+
+
+// ── FEATURE 8: Photo tab switching ──
+function showPhotoTab(tab, btn) {
+    document.querySelectorAll('.photo-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+    document.getElementById('ptab-' + tab).classList.add('active');
+    btn.classList.add('active');
+}
+
+// ── FEATURE 8: Lightbox with prev/next navigation ──
+let _lbPhotos = [];  // array of {src, caption}
+let _lbIndex  = 0;
+
+function openLightbox(index, gridId) {
+    // Collect all thumbs from the active panel
+    const grid = gridId === 'all'
+        ? document.getElementById('all-grid')
+        : null;
+    if (grid) {
+        _lbPhotos = [...grid.querySelectorAll('.photo-thumb')].map(t => ({
+            src:     t.dataset.src,
+            caption: t.dataset.caption || ''
+        }));
+    }
+    _lbIndex = index;
+    _showLightboxFrame();
+}
+
+function openLightboxSingle(src, caption) {
+    _lbPhotos = [{ src, caption }];
+    _lbIndex  = 0;
+    _showLightboxFrame();
+}
+
+function _showLightboxFrame() {
+    const { src, caption } = _lbPhotos[_lbIndex] || {};
+    if (!src) return;
+    document.getElementById('lightbox-img').src     = src;
+    document.getElementById('lightbox-caption').textContent = caption;
+    const total = _lbPhotos.length;
+    const counter = document.getElementById('lightbox-counter');
+    counter.textContent = total > 1 ? `${_lbIndex + 1} / ${total}` : '';
+    // Show/hide nav arrows
+    document.querySelector('.lightbox-prev').style.display = (total > 1 && _lbIndex > 0) ? 'flex' : 'none';
+    document.querySelector('.lightbox-next').style.display = (total > 1 && _lbIndex < total - 1) ? 'flex' : 'none';
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function navigateLightbox(dir) {
+    _lbIndex = Math.max(0, Math.min(_lbPhotos.length - 1, _lbIndex + dir));
+    _showLightboxFrame();
+}
+
+function closeLightboxDirect() {
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function closeLightbox(e) {
+    if (e.target === document.getElementById('lightbox')) closeLightboxDirect();
+}
+
+document.addEventListener('keydown', e => {
+    const lb = document.getElementById('lightbox');
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'Escape')      closeLightboxDirect();
+    if (e.key === 'ArrowRight')  navigateLightbox(1);
+    if (e.key === 'ArrowLeft')   navigateLightbox(-1);
+});
+
+// ── FEATURE 7: Character count ──
+function updateCharCount(el) {
+    const count = el.value.length;
+    const cc = document.getElementById('char-count');
+    cc.textContent = count + ' / 500';
+    cc.classList.toggle('warn', count > 450);
+}
+
+// ── FEATURE 7: Upvote ──
+const votedUpdates = new Set(JSON.parse(localStorage.getItem('votedUpdates') || '[]'));
+
+function upvote(updateId, btn) {
+    if (votedUpdates.has(updateId)) {
+        btn.classList.add('voted');
+        return;
+    }
+    const form = new FormData();
+    form.append('action', 'upvote');
+    form.append('update_id', updateId);
+    const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+    form.append('csrfmiddlewaretoken', csrf);
+
+    fetch(window.location.href, { method: 'POST', body: form })
+        .then(r => r.json())
+        .then(data => {
+            if (data.upvotes !== undefined) {
+                btn.querySelector('.upvote-count').textContent = data.upvotes;
+                btn.classList.add('voted');
+                votedUpdates.add(updateId);
+                localStorage.setItem('votedUpdates', JSON.stringify([...votedUpdates]));
+            }
+        })
+        .catch(() => {});
+}
+
+// Mark already-voted on load
+document.addEventListener('DOMContentLoaded', () => {
+    votedUpdates.forEach(id => {
+        document.querySelectorAll('.upvote-btn').forEach(btn => {
+            if (btn.getAttribute('onclick')?.includes(`upvote(${id},`)) btn.classList.add('voted');
+        });
+    });
+});
+
+function showTab(id, e) {
+    document.querySelectorAll('.survival-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    e.currentTarget.classList.add('active');
+}
+</script>
+{% if disaster.latitude and disaster.longitude %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const lat = {{ disaster.latitude }};
+    const lng = {{ disaster.longitude }};
+    const map = L.map('detail-map', { zoomControl:true, scrollWheelZoom:false }).setView([lat, lng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(map);
+    const icon = L.divIcon({
+        html: '<div style="font-size:1.1rem;font-weight:700;">{% if disaster.disaster_type == "Fire" %}FIRE{% elif disaster.disaster_type == "Flood" %}FLOOD{% elif disaster.disaster_type == "Earthquake" %}EQ{% elif disaster.disaster_type == "Cyclone" %}CYC{% else %}<i class="bi bi-exclamation-triangle-fill" style="color:#94a3b8;font-size:1.1rem;"></i>{% endif %}</div>',
+        className: '', iconSize:[32,32], iconAnchor:[16,16]
+    });
+    L.marker([lat, lng], { icon }).addTo(map)
+     .bindPopup('<strong>{{ disaster.disaster_type }}</strong><br>{{ disaster.location }}').openPopup();
+    L.circle([lat, lng], { radius:1000, color:'#e83b3b', fillColor:'#e83b3b', fillOpacity:0.08, weight:1.5 }).addTo(map);
+});
+</script>
+{% endif %}
+{% endblock %}

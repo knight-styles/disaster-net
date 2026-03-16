@@ -1,0 +1,1739 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block extra_css %}
+/* ── HOME PAGE STYLES ──────────────────────────────── */
+
+/* Hero */
+.hero {
+    text-align: center;
+    padding: 3.5rem 1rem 2.5rem;
+    position: relative;
+}
+
+.hero-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+}
+
+.hero h1 {
+    font-family: var(--font-head);
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+}
+
+.hero h1 span { color: var(--accent); }
+
+.hero p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 500px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+}
+
+/* Quick Action Buttons */
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 3rem;
+}
+
+.quick-actions a {
+    padding: 0.65rem 1.3rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.quick-actions a:hover {
+    background: var(--surface2);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-2px);
+}
+
+.quick-actions a.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+.quick-actions a.primary:hover { background: #c0392b; }
+
+/* Stats Row */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+
+.stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    text-align: center;
+    transition: border-color 0.2s;
+}
+
+.stat-card:hover { border-color: rgba(255,255,255,0.15); }
+
+.stat-card .stat-num {
+    font-family: var(--font-head);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+}
+
+.stat-card .stat-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Alert Grids */
+.alerts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+/* Alert Card */
+.alert-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.alert-card-header {
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.alert-card-header h3 {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alert-card-body { padding: 0.5rem 0; }
+
+/* Individual Alert Item */
+.alert-item {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    position: relative;
+}
+
+.alert-item:last-child { border-bottom: none; }
+.alert-item:hover { background: var(--surface2); }
+
+.alert-item-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.3rem;
+}
+
+.alert-item-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.alert-item-meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.alert-item-detail {
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+/* Severity Badges */
+.badge-severity {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-severity.Critical { background: rgba(232,59,59,0.2); color: #f87171; }
+.badge-severity.Moderate { background: rgba(245,158,11,0.2); color: #fbbf24; }
+.badge-severity.Minor    { background: rgba(34,197,94,0.2);  color: #4ade80; }
+
+/* Crowd Level Badge */
+.badge-crowd {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.badge-crowd.Minimal  { background: rgba(59,130,246,0.2);  color: #93c5fd; }
+.badge-crowd.Low      { background: rgba(34,197,94,0.2);   color: #4ade80; }
+.badge-crowd.Moderate { background: rgba(245,158,11,0.2);  color: #fbbf24; }
+.badge-crowd.High     { background: rgba(232,59,59,0.2);   color: #f87171; }
+.badge-crowd.Critical { background: rgba(220,38,38,0.9);   color: #ffffff; font-weight:700; }
+
+.alert-card-footer {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border);
+}
+
+.empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* Population Estimator */
+.estimator-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+}
+
+.estimator-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.estimator-header h3 {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.estimator-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.estimator-controls label {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.estimator-controls select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+}
+
+.estimator-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+}
+
+@media (max-width: 700px) {
+    .estimator-body { grid-template-columns: 1fr; }
+}
+
+.estimator-info {
+    padding: 1.25rem 1.5rem;
+    border-right: 1px solid var(--border);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.info-item label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+}
+
+.info-item span {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.pop-display {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    margin-top: 0.75rem;
+}
+
+.pop-display .pop-num {
+    font-family: var(--font-head);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+}
+
+.pop-display .pop-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 0.25rem;
+}
+
+.pop-level {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#map {
+    height: 300px;
+    z-index: 0;
+    position: relative;
+}
+
+.loading-text {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* ── PERSON DETAIL MODAL ── */
+.modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(5px);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+    opacity: 0; visibility: hidden;
+    transition: all 0.2s;
+}
+.modal-backdrop.open { opacity: 1; visibility: visible; }
+.modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 100%; max-width: 520px;
+    max-height: 90vh; overflow-y: auto;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.25s ease;
+    position: relative;
+}
+.modal-backdrop.open .modal-box { transform: translateY(0) scale(1); }
+.modal-close {
+    position: absolute; top: 0.9rem; right: 0.9rem;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); font-size: 0.85rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; z-index: 10; font-family: var(--font-body);
+}
+.modal-close:hover { color: var(--text); background: rgba(255,255,255,0.1); }
+.modal-photo { width:100%; height:220px; object-fit:cover; object-position:top; border-radius:14px 14px 0 0; display:block; }
+.modal-photo-placeholder {
+    width:100%; height:160px; background:var(--surface2);
+    border-radius:14px 14px 0 0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:3.5rem; color:var(--border);
+    flex-direction:column; gap:0.4rem;
+}
+.modal-photo-placeholder span { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.modal-top-bar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0.75rem 1.25rem; border-bottom:1px solid var(--border);
+    background:var(--surface2);
+}
+.modal-badge {
+    padding:3px 12px; border-radius:20px; font-size:0.72rem;
+    font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
+}
+/* Missing status */
+.modal-badge.Active   { background:rgba(232,59,59,0.15);  color:#f87171; border:1px solid rgba(232,59,59,0.3); }
+.modal-badge.Found    { background:rgba(34,197,94,0.15);  color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
+.modal-badge.Deceased { background:rgba(107,114,128,0.15);color:#9ca3af; border:1px solid rgba(107,114,128,0.3); }
+/* Injured severity */
+.modal-badge.Minor    { background:rgba(34,197,94,0.15);  color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
+.modal-badge.Moderate { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+.modal-badge.Critical { background:rgba(239,68,68,0.9);   color:#fff;    border:1px solid #ef4444; }
+.modal-id { font-size:0.72rem; color:var(--muted); font-family:monospace; }
+.modal-body { padding:1.25rem; }
+.modal-name { font-family:var(--font-head); font-size:1.5rem; font-weight:700; margin-bottom:0.25rem; }
+.modal-meta { font-size:0.82rem; color:var(--muted); margin-bottom:1.25rem; }
+.modal-injury-tag {
+    display:inline-flex; align-items:center; gap:0.4rem;
+    background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.25);
+    border-radius:6px; padding:0.4rem 0.85rem;
+    font-size:0.85rem; color:#f87171; font-weight:600; margin-bottom:1rem;
+}
+.modal-row {
+    display:flex; gap:0.6rem; align-items:flex-start;
+    padding:0.6rem 0; border-bottom:1px solid var(--border); font-size:0.85rem;
+}
+.modal-row:last-of-type { border-bottom:none; }
+.modal-row-icon { flex-shrink:0; width:20px; text-align:center; font-size:0.95rem; margin-top:1px; }
+.modal-row-label { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px; }
+.modal-row-value { color:var(--text); line-height:1.4; }
+.modal-extra {
+    border-radius:8px; padding:0.75rem 1rem;
+    font-size:0.82rem; color:var(--muted); line-height:1.5; margin-top:0.75rem;
+}
+.modal-extra.marks { background:var(--surface2); border-left:3px solid rgba(232,59,59,0.4); }
+.modal-extra.notes { background:var(--surface2); border-left:3px solid rgba(245,158,11,0.5); }
+.modal-extra strong { color:var(--text); display:block; margin-bottom:4px; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.4px; }
+.modal-appeal {
+    background:rgba(232,59,59,0.06); border:1px solid rgba(232,59,59,0.2);
+    border-radius:8px; padding:0.75rem 1rem;
+    font-size:0.8rem; color:var(--muted); margin-top:1rem;
+    text-align:center; line-height:1.5;
+}
+.modal-appeal strong { color:var(--text); }
+.alert-item { cursor: pointer; }
+
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+    .alerts-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+    .hero h1 { font-size: 1.8rem; }
+    .alerts-grid { grid-template-columns: 1fr; }
+    .quick-actions { flex-direction: column; align-items: stretch; }
+    .quick-actions a { text-align: center; }
+    .estimator-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .estimator-controls { flex-wrap: wrap; width: 100%; }
+    .estimator-controls select { flex: 1; min-width: 100px; }
+    .estimator-controls .btn { width: 100%; justify-content: center; }
+}
+@media (max-width: 400px) {
+    .hero h1 { font-size: 1.5rem; }
+    .hero p { font-size: 0.82rem; }
+}
+
+/* ── DONATION AWARENESS CARD ── */
+.donation-card {
+    margin-top: 2rem;
+    background: linear-gradient(135deg, rgba(232,59,59,0.08) 0%, rgba(124,58,237,0.08) 100%);
+    border: 1px solid rgba(232,59,59,0.25);
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    position: relative;
+    overflow: hidden;
+}
+.donation-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(232,59,59,0.12), transparent 70%);
+    pointer-events: none;
+}
+.donation-card-left { flex: 1; min-width: 200px; }
+.donation-card-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.donation-card-title {
+    font-family: var(--font-head);
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 0.4rem;
+    color: var(--text);
+}
+.donation-card-desc {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.5;
+    max-width: 460px;
+}
+.donation-card-stats {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+.donation-stat {
+    text-align: center;
+}
+.donation-stat-num {
+    font-family: var(--font-head);
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text);
+}
+.donation-stat-num.raised { color: #4ade80; }
+.donation-stat-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 3px;
+}
+.donation-stat-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+}
+.donation-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+.btn-donate-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 0.65rem 1.4rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    font-family: var(--font-head);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+}
+.btn-donate-primary:hover { background: #c0392b; transform: translateY(-1px); }
+.btn-donate-secondary {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-decoration: none;
+    text-align: center;
+    transition: color 0.15s;
+}
+.btn-donate-secondary:hover { color: var(--text); }
+
+/* Progress bar */
+.donation-progress-wrap {
+    width: 100%;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.donation-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+}
+.donation-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.donation-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e83b3b, #7c3aed);
+    border-radius: 99px;
+    transition: width 1s ease;
+    min-width: 4px;
+}
+
+@media (max-width: 600px) {
+    .donation-card { padding: 1.2rem; }
+    .donation-card-stats { gap: 1rem; }
+    .donation-card-actions { align-items: stretch; width: 100%; }
+    .btn-donate-primary { justify-content: center; }
+    .btn-donate-secondary { text-align: center; }
+}
+
+/* ── HOME DISASTER MAP ── */
+.home-map-section {
+    margin-top: 2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.home-map-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.home-map-title {
+    font-family: var(--font-head);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+}
+.home-map-sub {
+    font-size: 0.73rem;
+    color: var(--muted);
+    margin: 0.1rem 0 0;
+}
+.home-map-live {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: #4ade80;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+.home-live-dot {
+    width: 6px; height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse-dot 1.8s ease-in-out infinite;
+}
+.home-map-fullscreen {
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.25rem 0.6rem;
+    text-decoration: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.home-map-fullscreen:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+.home-map-wrap {
+    position: relative;
+    height: 380px;
+}
+#home-disaster-map {
+    width: 100%;
+    height: 100%;
+}
+.home-map-legend {
+    position: absolute;
+    bottom: 36px; left: 10px;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    background: rgba(13,17,23,0.85);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.68rem;
+    color: var(--muted);
+    z-index: 1000;
+}
+.home-map-count {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: rgba(13,17,23,0.88);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.73rem;
+    color: var(--muted);
+    z-index: 1000;
+}
+.home-map-count strong { color: var(--accent); font-family: var(--font-head); }
+@media (max-width: 600px) {
+    .home-map-wrap { height: 260px; }
+    .home-map-legend { gap: 0.5rem; }
+}
+
+/* ── FEATURES SECTION ─────────────────────────────── */
+.features-section {
+    background: transparent;
+    padding: 3.5rem 0 4rem;
+    margin-top: 2.5rem;
+    position: relative;
+}
+.features-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(to bottom, transparent 0%, rgba(232,59,59,0.03) 30%, rgba(56,189,248,0.03) 70%, transparent 100%);
+    pointer-events: none;
+}
+.features-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+    position: relative;
+}
+.features-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+.features-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.9rem;
+    padding: 0.3rem 0.9rem;
+    border: 1px solid rgba(232,59,59,0.25);
+    border-radius: 999px;
+    background: rgba(232,59,59,0.06);
+}
+.features-eyebrow-dot {
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 2s infinite;
+    flex-shrink: 0;
+}
+.features-title {
+    font-family: var(--font-head);
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: var(--text);
+    margin-bottom: 0.6rem;
+    line-height: 1.15;
+}
+.features-title span { color: var(--accent); }
+.features-subtitle {
+    font-size: 0.88rem;
+    color: var(--muted);
+    max-width: 440px;
+    margin: 0 auto;
+    line-height: 1.65;
+}
+
+/* ── grid ── */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* ── card ── */
+.feat-card {
+    background: var(--surface);
+    padding: 1.6rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    transition: background 0.18s, color 0.18s;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+/* corner bracket effect */
+.feat-card::before,
+.feat-card::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.feat-card::before {
+    top: 0; left: 0;
+    border-top: 2px solid var(--feat-color, var(--accent));
+    border-left: 2px solid var(--feat-color, var(--accent));
+    border-radius: 2px 0 0 0;
+}
+.feat-card::after {
+    bottom: 0; right: 0;
+    border-bottom: 2px solid var(--feat-color, var(--accent));
+    border-right: 2px solid var(--feat-color, var(--accent));
+    border-radius: 0 0 2px 0;
+}
+.feat-card:hover {
+    background: var(--bg);
+    z-index: 1;
+}
+.feat-card:hover::before,
+.feat-card:hover::after { opacity: 1; }
+
+/* badge on card (optional) */
+.feat-badge {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: var(--feat-bg, rgba(232,59,59,0.12));
+    color: var(--feat-color, var(--accent));
+    border: 1px solid var(--feat-color, var(--accent));
+    opacity: 0.7;
+}
+
+.feat-icon-wrap {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--feat-bg, rgba(232,59,59,0.1));
+    border: 1px solid color-mix(in srgb, var(--feat-color, var(--accent)) 20%, transparent);
+    flex-shrink: 0;
+    transition: transform 0.18s;
+}
+.feat-card:hover .feat-icon-wrap { transform: scale(1.08); }
+
+.feat-label {
+    font-family: var(--font-head);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: var(--text);
+    line-height: 1.2;
+}
+.feat-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.6;
+    flex: 1;
+}
+.feat-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--feat-color, var(--accent));
+    opacity: 0.75;
+    margin-top: auto;
+}
+.feat-tag-dot {
+    width: 4px; height: 4px;
+    background: currentColor;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+/* arrow on hover */
+.feat-arrow {
+    display: inline-flex;
+    margin-left: auto;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.18s, transform 0.18s;
+    color: var(--feat-color, var(--accent));
+}
+.feat-card:hover .feat-arrow { opacity: 1; transform: translateX(0); }
+
+/* locked badge */
+.feat-locked .feat-badge { opacity: 1; }
+
+@media (max-width: 900px) {
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.feat-pwa-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.3rem;
+    padding: 0.5rem 1rem;
+    border-radius: 7px;
+    background: rgba(52,211,153,0.12);
+    border: 1px solid rgba(52,211,153,0.35);
+    color: #34d399;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    font-family: var(--font-body);
+}
+.feat-pwa-btn:hover {
+    background: rgba(52,211,153,0.22);
+    border-color: rgba(52,211,153,0.6);
+}
+
+@media (max-width: 540px) {
+    .features-section { padding: 2rem 0 2.5rem; }
+    .features-grid { grid-template-columns: 1fr; }
+    .feat-card { padding: 1.2rem 1.1rem; }
+}
+
+{% endblock %}
+
+{% block content %}
+<div class="modal-backdrop" id="person-modal" onclick="closeModalOutside(event)">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div id="modal-content"></div>
+    </div>
+</div>
+
+
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-label">● Live System Active</div>
+    <h1>Crowd-Source<br><span>Disaster Management</span></h1>
+    <p>Real-time disaster reporting, missing persons tracking, and emergency coordination.</p>
+
+    <div class="quick-actions">
+        <a href="{% url 'report_disaster' %}" class="primary"><i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i> Report Disaster</a>
+        <a href="{% url 'report_missing' %}"><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Missing Person</a>
+        <a href="{% url 'report_injured' %}"><i class="bi bi-clipboard2-pulse-fill" style="color:#fb923c;font-size:1.1rem;"></i> Injured Person</a>
+        <a href="{% url 'donate' %}"><i class="bi bi-suit-heart-fill" style="color:#f87171;font-size:1.1rem;"></i> Donate</a>
+        <a href="{% url 'view_missing' %}">View All Missing</a>
+        <a href="{% url 'view_injured' %}">View All Injured</a>
+    </div>
+</div>
+
+<!-- POPULATION ESTIMATOR -->
+<div class="estimator-card">
+    <div class="estimator-header">
+        <h3><i class="bi bi-broadcast-pin" style="color:#60a5fa;font-size:1.1rem;"></i> Live Population Estimator</h3>
+        <div class="estimator-controls">
+            <label for="radius">Radius:</label>
+            <select id="radius" onchange="getLocation()">
+                <option value="1">1 km</option>
+                <option value="2">2 km</option>
+                <option value="5">5 km</option>
+            </select>
+            <button class="btn btn-primary" onclick="getLocation()"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i> Refresh</button>
+        </div>
+    </div>
+
+    <div class="estimator-body">
+        <div class="estimator-info">
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Latitude</label>
+                    <span id="lat" class="loading-text">Detecting…</span>
+                </div>
+                <div class="info-item">
+                    <label>Longitude</label>
+                    <span id="lon" class="loading-text">Detecting…</span>
+                </div>
+                <div class="info-item">
+                    <label>City</label>
+                    <span id="city" class="loading-text">Detecting…</span>
+                </div>
+                <div class="info-item">
+                    <label>State</label>
+                    <span id="state" class="loading-text">Detecting…</span>
+                </div>
+            </div>
+
+            <div class="pop-display">
+                <div class="pop-num" id="population">…</div>
+                <div class="pop-label">Estimated People Nearby</div>
+                <div id="pop-level-badge"></div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+</div>
+
+<!-- ALERTS GRID -->
+<div class="alerts-grid">
+
+    <!-- DISASTER ALERTS -->
+    <div class="alert-card">
+        <div class="alert-card-header">
+            <h3><i class="bi bi-bell-fill" style="color:#fbbf24;font-size:1.1rem;"></i> Disaster Alerts</h3>
+            <span class="badge-crowd High" style="{% if not disasters %}display:none{% endif %}">LIVE</span>
+        </div>
+        <div class="alert-card-body">
+            {% for d in disasters %}
+            <div class="alert-item">
+                <div class="alert-item-top">
+                    <div class="alert-item-name">{{ d.disaster_type }}</div>
+                    <div class="alert-item-meta">
+                        <span class="badge-crowd {{ d.crowd_level }}">
+                            {{ d.crowd_level_emoji }} {{ d.crowd_level }}
+                        </span>
+                        <span>{{ d.reported_at|timesince }} ago</span>
+                    </div>
+                </div>
+                <div class="alert-item-detail"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i> {{ d.location }}</div>
+                {% if d.estimated_people > 0 %}
+                <div class="alert-item-detail" style="margin-top:3px;">
+                    <i class="bi bi-people-fill" style="color:#94a3b8;font-size:1.1rem;"></i> ~{{ d.estimated_people }} people affected
+                </div>
+                {% endif %}
+                <div style="margin-top:6px;">
+                    <a href="{% url 'disaster_detail' d.pk %}" style="font-size:0.75rem;color:var(--accent);text-decoration:none;font-weight:500;">View Details →</a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state"><i class="bi bi-check-circle-fill" style="color:#4ade80;font-size:1.1rem;"></i> No active disaster alerts</div>
+            {% endfor %}
+        </div>
+        <div class="alert-card-footer">
+            <a href="{% url 'view_disasters' %}" class="btn btn-outline" style="font-size:0.8rem;">View all reports →</a>
+        </div>
+    </div>
+
+    <!-- MISSING PERSONS -->
+    <div class="alert-card">
+        <div class="alert-card-header">
+            <h3><i class="bi bi-person-fill" style="color:#60a5fa;font-size:1.1rem;"></i> Missing Persons</h3>
+        </div>
+        <div class="alert-card-body">
+            {% for m in missing %}
+            <div class="alert-item"
+                 onclick="openMissingModal(this)"
+                 data-pk="{{ m.pk }}"
+                 data-fullname="{{ m.name }}"
+                 data-age="{{ m.age }}"
+                 data-gender="{{ m.gender }}"
+                 data-location="{{ m.last_seen_location }}"
+                 data-marks="{{ m.body_marks|default:''|escapejs }}"
+                 data-reported="{{ m.reported_at|date:'d M Y, H:i' }}"
+                 data-status="{{ m.status }}"
+                 data-photo="{% if m.photo %}{{ m.photo.url }}{% endif %}">
+                <div class="alert-item-top">
+                    <div class="alert-item-name">{{ m.name }}</div>
+                    <div class="alert-item-meta">
+                        <span>{{ m.age }} yrs · {{ m.gender }}</span>
+                        <span>{{ m.reported_at|timesince }} ago</span>
+                    </div>
+                </div>
+                <div class="alert-item-detail"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i> Last seen: {{ m.last_seen_location }}</div>
+            </div>
+            {% empty %}
+            <div class="empty-state">No active missing person reports</div>
+            {% endfor %}
+        </div>
+        <div class="alert-card-footer">
+            <a href="{% url 'view_missing' %}" class="btn btn-outline" style="font-size:0.8rem;">View all →</a>
+        </div>
+    </div>
+
+    <!-- INJURED PERSONS -->
+    <div class="alert-card">
+        <div class="alert-card-header">
+            <h3><i class="bi bi-bandaid-fill" style="color:#fb923c;font-size:1.1rem;"></i> Injured Persons</h3>
+        </div>
+        <div class="alert-card-body">
+            {% for i in injured %}
+            <div class="alert-item"
+                 onclick="openInjuredModal(this)"
+                 data-pk="{{ i.pk }}"
+                 data-fullname="{{ i.name }}"
+                 data-age="{{ i.age }}"
+                 data-gender="{{ i.gender }}"
+                 data-location="{{ i.location }}"
+                 data-injury="{{ i.injury_type }}"
+                 data-description="{{ i.description|default:''|escapejs }}"
+                 data-reported="{{ i.reported_at|date:'d M Y, H:i' }}"
+                 data-status="{{ i.status }}"
+                 data-severity="{{ i.severity }}"
+                 data-photo="{% if i.photo %}{{ i.photo.url }}{% endif %}">
+                <div class="alert-item-top">
+                    <div class="alert-item-name">{{ i.name }}</div>
+                    <div class="alert-item-meta">
+                        <span class="badge-severity {{ i.severity }}">{{ i.severity }}</span>
+                        <span>{{ i.reported_at|timesince }} ago</span>
+                    </div>
+                </div>
+                <div class="alert-item-detail"><i class="bi bi-clipboard-plus-fill" style="color:#f87171;font-size:1.1rem;"></i> {{ i.injury_type }}</div>
+                <div class="alert-item-detail"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i> {{ i.location }}</div>
+            </div>
+            {% empty %}
+            <div class="empty-state">No active injured person reports</div>
+            {% endfor %}
+        </div>
+        <div class="alert-card-footer">
+            <a href="{% url 'view_injured' %}" class="btn btn-outline" style="font-size:0.8rem;">View all →</a>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── DONATION AWARENESS CARD ── -->
+<div class="donation-card">
+    <div class="donation-card-left">
+        <div class="donation-card-eyebrow"><i class="bi bi-suit-heart-fill" style="color:#f87171;font-size:1.1rem;"></i> Community Relief Fund</div>
+        <h3 class="donation-card-title">Every Rupee Saves a Life</h3>
+        <p class="donation-card-desc">Your contribution goes directly to disaster relief, emergency supplies, and rescue operations across affected communities.</p>
+
+        <!-- Progress toward goal -->
+        <div class="donation-progress-wrap">
+            <div class="donation-progress-label">
+                <span>₹{{ donation_total|floatformat:0 }} raised</span>
+                <span>Goal: ₹10,00,000</span>
+            </div>
+            <div class="donation-progress-bar">
+                <div class="donation-progress-fill" id="donate-progress-fill"
+                     style="width: 0%"
+                     data-pct="{% widthratio donation_total 1000000 100 %}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="donation-card-stats">
+        <div class="donation-stat">
+            <div class="donation-stat-num raised">₹{{ donation_total|floatformat:0 }}</div>
+            <div class="donation-stat-label">Total Raised</div>
+        </div>
+        <div class="donation-stat-divider"></div>
+        <div class="donation-stat">
+            <div class="donation-stat-num">{{ donation_count }}</div>
+            <div class="donation-stat-label">Donors</div>
+        </div>
+        <div class="donation-stat-divider"></div>
+        <div class="donation-stat">
+            <div class="donation-stat-num">{{ total_disasters }}</div>
+            <div class="donation-stat-label">Disasters</div>
+        </div>
+    </div>
+
+    <div class="donation-card-actions">
+        <a href="{% url 'donate' %}" class="btn-donate-primary"><i class="bi bi-suit-heart-fill" style="color:#f87171;font-size:1.1rem;"></i> Donate Now</a>
+        <a href="{% url 'donate' %}" class="btn-donate-secondary">View all donors →</a>
+    </div>
+</div>
+
+<!-- ── LIVE DISASTER MAP ── -->
+<div class="home-map-section">
+    <div class="home-map-header">
+        <div>
+            <h3 class="home-map-title"><i class="bi bi-map-fill" style="color:#38bdf8;font-size:1.1rem;"></i> Live Disaster Map</h3>
+            <p class="home-map-sub">All reported disasters — updated every 30 seconds</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span class="home-map-live"><span class="home-live-dot"></span> Live</span>
+            <a href="{% url 'disaster_heatmap' %}" class="home-map-fullscreen" title="Open full heatmap">⊞ Full Map</a>
+        </div>
+    </div>
+    <div class="home-map-wrap">
+        <div id="home-disaster-map"></div>
+        <div class="home-map-legend">
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4500;margin-right:3px;"></span>Fire</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#38bdf8;margin-right:3px;"></span>Flood</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#a78bfa;margin-right:3px;"></span>Earthquake</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:3px;"></span>Other</span>
+        </div>
+        <div class="home-map-count" id="home-map-count">Loading…</div>
+    </div>
+</div>
+
+<!-- FEATURES SECTION -->
+<section class="features-section">
+    <div class="features-inner">
+
+        <div class="features-header">
+            <div class="features-eyebrow">
+                <span class="features-eyebrow-dot"></span>
+                Platform Capabilities
+            </div>
+            <div class="features-title">Everything You Need <span>in a Crisis</span></div>
+            <div class="features-subtitle">Real-time reporting, coordination, and community action — built for speed when it matters most.</div>
+        </div>
+
+        <div class="features-grid">
+
+            <!-- Disaster Reporting -->
+            <a href="{% url 'report_disaster' %}" class="feat-card" style="--feat-color:#e83b3b;--feat-bg:rgba(232,59,59,0.1);">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-exclamation-triangle-fill" style="color:#e83b3b;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Disaster Reporting</div>
+                <div class="feat-desc">Report fires, floods, earthquakes and more with GPS location, crowd estimates, and photo evidence — instantly visible to the community.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> Report Now
+                    <span class="feat-arrow"><i class="bi bi-arrow-right" style="color:currentColor;font-size:0.75rem;"></i></span>
+                </div>
+            </a>
+
+            <!-- Live Heatmap -->
+            <a href="{% url 'disaster_heatmap' %}" class="feat-card" style="--feat-color:#38bdf8;--feat-bg:rgba(56,189,248,0.1);">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-broadcast-pin" style="color:#38bdf8;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-badge">Live</div>
+                <div class="feat-label">Live Heatmap</div>
+                <div class="feat-desc">Interactive map refreshed every 30 seconds — colour-coded disaster circles sized by crowd intensity, filterable by type and severity.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> View Map
+                    <span class="feat-arrow"><i class="bi bi-arrow-right" style="color:currentColor;font-size:0.75rem;"></i></span>
+                </div>
+            </a>
+
+            <!-- Missing Persons -->
+            <a href="{% url 'view_missing' %}" class="feat-card" style="--feat-color:#94a3b8;--feat-bg:rgba(148,163,184,0.1);">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-person-fill-exclamation" style="color:#94a3b8;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Missing Persons</div>
+                <div class="feat-desc">Report and track missing persons with photos, physical descriptions and last-seen location. Status updates automatically when they are found.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> Search Registry
+                    <span class="feat-arrow"><i class="bi bi-arrow-right" style="color:currentColor;font-size:0.75rem;"></i></span>
+                </div>
+            </a>
+
+            <!-- Injured Persons -->
+            <a href="{% url 'view_injured' %}" class="feat-card" style="--feat-color:#fb923c;--feat-bg:rgba(251,146,60,0.1);">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-heart-pulse-fill" style="color:#fb923c;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Injured Persons</div>
+                <div class="feat-desc">Log injured persons with severity (Minor / Moderate / Critical) and track recovery status from field report all the way through to hospital discharge.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> View Records
+                    <span class="feat-arrow"><i class="bi bi-arrow-right" style="color:currentColor;font-size:0.75rem;"></i></span>
+                </div>
+            </a>
+
+            <!-- Crowd Estimation -->
+            <a href="{% url 'home' %}#live-population" class="feat-card" style="--feat-color:#a78bfa;--feat-bg:rgba(167,139,250,0.1);">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-people-fill" style="color:#a78bfa;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Crowd Estimation</div>
+                <div class="feat-desc">Live population density estimator powered by OpenStreetMap. Pick a radius and instantly see how many people are in the affected zone.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> Live Data
+                    <span class="feat-arrow"><i class="bi bi-arrow-right" style="color:currentColor;font-size:0.75rem;"></i></span>
+                </div>
+            </a>
+
+            <!-- Community Updates -->
+            <a href="{% url 'view_disasters' %}" class="feat-card" style="--feat-color:#fbbf24;--feat-bg:rgba(251,191,36,0.1);">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-chat-square-text-fill" style="color:#fbbf24;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Community Updates</div>
+                <div class="feat-desc">Post live updates on any disaster report. The community upvotes the most accurate information so the best data always rises to the top.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> Browse Reports
+                    <span class="feat-arrow"><i class="bi bi-arrow-right" style="color:currentColor;font-size:0.75rem;"></i></span>
+                </div>
+            </a>
+
+            <!-- Survival Guide -->
+            <a href="{% url 'view_disasters' %}" class="feat-card" style="--feat-color:#4ade80;--feat-bg:rgba(74,222,128,0.1);">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-journal-bookmark-fill" style="color:#4ade80;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Survival Guide</div>
+                <div class="feat-desc">Context-aware safety tips, emergency kit checklist, and disaster-specific do's and don'ts auto-loaded on every disaster detail page.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> Stay Safe
+                    <span class="feat-arrow"><i class="bi bi-arrow-right" style="color:currentColor;font-size:0.75rem;"></i></span>
+                </div>
+            </a>
+
+            <!-- Donate -->
+            <a href="{% url 'donate' %}" class="feat-card" style="--feat-color:#f87171;--feat-bg:rgba(248,113,113,0.1);">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-suit-heart-fill" style="color:#f87171;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Donate</div>
+                <div class="feat-desc">Support relief operations with purpose-tagged contributions — disaster relief, medical aid, food, or shelter. Totals are publicly visible.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> Contribute
+                    <span class="feat-arrow"><i class="bi bi-arrow-right" style="color:currentColor;font-size:0.75rem;"></i></span>
+                </div>
+            </a>
+
+            <!-- Feedback -->
+            <a href="{% url 'feedback' %}" class="feat-card" style="--feat-color:#c084fc;--feat-bg:rgba(192,132,252,0.1);">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-chat-right-dots-fill" style="color:#c084fc;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Feedback & Reports</div>
+                <div class="feat-desc">Flag incorrect disaster info, missing data, or bugs directly from any page. Every submission is reviewed and resolved by the moderation team.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> Give Feedback
+                    <span class="feat-arrow"><i class="bi bi-arrow-right" style="color:currentColor;font-size:0.75rem;"></i></span>
+                </div>
+            </a>
+
+            <!-- Admin Dashboard — login required -->
+            <a href="{% url 'auth_login' %}?next={% url 'admin_dashboard' %}" class="feat-card feat-locked" style="--feat-color:#64748b;--feat-bg:rgba(100,116,139,0.1);">
+                <div class="feat-badge">Login Required</div>
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-gear-fill" style="color:#64748b;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Admin Control Panel</div>
+                <div class="feat-desc">Full dashboard for staff — disaster stats, missing/injured summaries, recent activity feeds, unresolved feedback queue, and status management tools.</div>
+                <div class="feat-tag">
+                    <span class="feat-tag-dot"></span> Staff Only
+                    <i class="bi bi-lock-fill" style="color:currentColor;font-size:1.1rem;"></i>
+                </div>
+            </a>
+
+            <!-- Multi-language -->
+            <div class="feat-card" style="--feat-color:#818cf8;--feat-bg:rgba(129,140,248,0.1);cursor:default;">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-translate" style="color:#818cf8;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-label">Multi-language</div>
+                <div class="feat-desc">Switch between English, Hindi (हिन्दी) and Odia (ଓଡ଼ିଆ) instantly using the floating language button. Your preference is remembered across sessions.</div>
+                <div class="feat-tag"><span class="feat-tag-dot"></span> EN · हि · ଓ</div>
+            </div>
+
+            <!-- Install App / PWA -->
+            <div class="feat-card feat-pwa-card" style="--feat-color:#34d399;--feat-bg:rgba(52,211,153,0.1);cursor:default;" id="feat-pwa">
+                <div class="feat-icon-wrap">
+                    <i class="bi bi-phone-fill" style="color:#34d399;font-size:1.25rem;"></i>
+                </div>
+                <div class="feat-badge" id="feat-pwa-badge">Offline Ready</div>
+                <div class="feat-label">Install App</div>
+                <div class="feat-desc">Install DisasterNet on your device for instant access — works offline, no app store needed. Available on Android and desktop Chrome.</div>
+                <div class="feat-tag" id="feat-pwa-tag">
+                    <span class="feat-tag-dot"></span>
+                    <span id="feat-pwa-status">Checking…</span>
+                </div>
+                <button class="feat-pwa-btn" id="feat-pwa-btn" style="display:none" onclick="featInstallPwa()">
+                    <i class="bi bi-upload" style="color:currentColor;font-size:1.1rem;"></i>
+                    Install Now
+                </button>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let map, marker, radiusCircle;
+
+// Auto-trigger on every page load
+document.addEventListener('DOMContentLoaded', getLocation);
+
+function getLocation() {
+    if (!navigator.geolocation) {
+        showLocationError('Geolocation is not supported by your browser.');
+        return;
+    }
+    // Show detecting state
+    ['lat','lon','city','state'].forEach(id => {
+        const el = document.getElementById(id);
+        el.textContent = 'Detecting…';
+        el.className = 'loading-text';
+    });
+    document.getElementById('population').textContent = '…';
+
+    navigator.geolocation.getCurrentPosition(sendPosition, function() {
+        showLocationError('Location access denied. Please allow location access and refresh.');
+    });
+}
+
+function showLocationError(msg) {
+    ['lat','lon','city','state'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+    });
+    document.getElementById('population').textContent = '—';
+    console.warn(msg);
+}
+
+function sendPosition(position) {
+    const radius = document.getElementById('radius').value;
+
+    fetch("{% url 'get_live_population' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            radius: parseFloat(radius)
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            showLocationError(data.error);
+            return;
+        }
+
+        // Fix: city & state come directly from response
+        document.getElementById('lat').textContent   = data.latitude.toFixed(5);
+        document.getElementById('lon').textContent   = data.longitude.toFixed(5);
+        document.getElementById('city').textContent  = data.city  || 'Unknown';
+        document.getElementById('state').textContent = data.state || 'Unknown';
+        document.getElementById('population').textContent = (data.population || 0).toLocaleString();
+
+        // Remove loading style once populated
+        ['lat','lon','city','state'].forEach(id => {
+            document.getElementById(id).className = '';
+        });
+
+        // Crowd level badge
+        const level = data.level || 'Unknown';
+        const colors = { Minimal:'#93c5fd', Low:'#4ade80', Moderate:'#fbbf24', High:'#f87171', Critical:'#ffffff', Unknown:'#6b7280' };
+        const bgs    = { Minimal:'rgba(59,130,246,0.2)', Low:'rgba(34,197,94,0.2)', Moderate:'rgba(245,158,11,0.2)', High:'rgba(232,59,59,0.2)', Critical:'rgba(220,38,38,0.9)', Unknown:'rgba(107,114,128,0.2)' };
+        const emoji  = { Minimal:'', Low:'', Moderate:'', High:'', Critical:'!', Unknown:'' };
+        document.getElementById('pop-level-badge').innerHTML =
+            `<span class="pop-level" style="background:${bgs[level]};color:${colors[level]}">
+                ${emoji[level]} ${level} Crowd
+            </span>`;
+
+        // Map
+        const lat = data.latitude, lng = data.longitude;
+        if (!map) {
+            map = L.map('map').setView([lat, lng], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+        } else {
+            map.setView([lat, lng], 14);
+        }
+
+        if (marker) marker.remove();
+        if (radiusCircle) radiusCircle.remove();
+
+        marker = L.marker([lat, lng])
+            .addTo(map)
+            .bindPopup(`<b>${data.city || 'Your Location'}, ${data.state || ''}</b><br>~${(data.population||0).toLocaleString()} people nearby`)
+            .openPopup();
+
+        radiusCircle = L.circle([lat, lng], {
+            radius: parseFloat(radius) * 1000,
+            color: '#e83b3b',
+            fillColor: '#e83b3b',
+            fillOpacity: 0.08,
+            weight: 1.5
+        }).addTo(map);
+    })
+    .catch(err => {
+        console.error('Population fetch error:', err);
+        showLocationError('Failed to fetch population data.');
+    });
+}
+
+// ── PERSON DETAIL MODALS ─────────────────────────────────────
+function openMissingModal(card) {
+    const name     = card.dataset.fullname;
+    const age      = card.dataset.age;
+    const gender   = card.dataset.gender;
+    const location = card.dataset.location;
+    const marks    = card.dataset.marks;
+    const reported = card.dataset.reported;
+    const photo    = card.dataset.photo;
+    const status   = card.dataset.status;
+    const pk       = card.dataset.pk;
+
+    const genderIcon = gender === 'Male' ? '♂' : gender === 'Female' ? '♀' : '⚪';
+    const statusDot  = status === 'Active' ? '●' : status === 'Found' ? '●' : '○';
+
+    const photoHTML = photo
+        ? `<img class="modal-photo" src="${photo}" alt="${name}">`
+        : `<div class="modal-photo-placeholder">${genderIcon}<span>No Photo</span></div>`;
+
+    document.getElementById('modal-content').innerHTML = `
+        ${photoHTML}
+        <div class="modal-top-bar">
+            <span class="modal-badge ${status}">${statusDot} ${status}</span>
+            <span class="modal-id">#${String(pk).padStart(5,'0')}</span>
+        </div>
+        <div class="modal-body">
+            <div class="modal-name">${name}</div>
+            <div class="modal-meta">${age} years old &nbsp;·&nbsp; ${gender}</div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Last Seen Location</div><div class="modal-row-value">${location}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-clock-history" style="color:#94a3b8;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Reported On</div><div class="modal-row-value">${reported}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-bar-chart-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Status</div><div class="modal-row-value">${status}</div></div>
+            </div>
+            ${marks ? `<div class="modal-extra marks"><strong>Identification Marks</strong>${marks}</div>` : ''}
+            <div class="modal-appeal">If you have seen <strong>${name}</strong>, call <strong>100 (Police)</strong> immediately.</div>
+        </div>`;
+
+    document.getElementById('person-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function openInjuredModal(card) {
+    const name        = card.dataset.fullname;
+    const age         = card.dataset.age;
+    const gender      = card.dataset.gender;
+    const location    = card.dataset.location;
+    const injury      = card.dataset.injury;
+    const description = card.dataset.description;
+    const reported    = card.dataset.reported;
+    const photo       = card.dataset.photo;
+    const severity    = card.dataset.severity;
+    const status      = card.dataset.status;
+    const pk          = card.dataset.pk;
+
+    const sevIcon = severity === 'Critical' ? '▲' : severity === 'Moderate' ? '◆' : '✓';
+
+    const photoHTML = photo
+        ? `<img class="modal-photo" src="${photo}" alt="${name}">`
+        : `<div class="modal-photo-placeholder">+</div>`;
+
+    document.getElementById('modal-content').innerHTML = `
+        ${photoHTML}
+        <div class="modal-top-bar">
+            <span class="modal-badge ${severity}">${sevIcon} ${severity}</span>
+            <span class="modal-id">#${String(pk).padStart(5,'0')}</span>
+        </div>
+        <div class="modal-body">
+            <div class="modal-name">${name}</div>
+            <div class="modal-meta">${age} years old &nbsp;·&nbsp; ${gender}</div>
+            <div class="modal-injury-tag">⚕ ${injury}</div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-geo-alt-fill" style="color:#f87171;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Location</div><div class="modal-row-value">${location}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Severity</div><div class="modal-row-value">${severity}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-bar-chart-fill" style="color:#60a5fa;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Status</div><div class="modal-row-value">${status}</div></div>
+            </div>
+            <div class="modal-row">
+                <span class="modal-row-icon"><i class="bi bi-clock-history" style="color:#94a3b8;font-size:1.1rem;"></i></span>
+                <div><div class="modal-row-label">Reported On</div><div class="modal-row-value">${reported}</div></div>
+            </div>
+            ${description ? `<div class="modal-extra notes"><strong>Clinical Notes</strong>${description}</div>` : ''}
+        </div>`;
+
+    document.getElementById('person-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('person-modal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+    if (e.target.id === 'person-modal') closeModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── HOME DISASTER MAP ──────────────────────────
+(function() {
+    const TYPE_COLORS = {
+        'Fire':'#ff4500','Flood':'#38bdf8','Earthquake':'#a78bfa',
+        'Cyclone':'#818cf8','Tsunami':'#22d3ee','Landslide':'#d97706',
+        'Accident':'#fbbf24','Chemical Spill':'#84cc16','Other':'#6b7280',
+    };
+    const TYPE_ICONS = {
+        'Fire':'<b style="color:#fb923c">FIRE</b>','Flood':'<b style="color:#38bdf8">FLOOD</b>','Earthquake':'<b style="color:#a78bfa">EQ</b>','Cyclone':'<b style="color:#818cf8">CYC</b>',
+        'Tsunami':'<b style="color:#38bdf8">TSU</b>','Landslide':'<b style="color:#84cc16">LAND</b>','Accident':'<b style="color:#fbbf24">ACC</b>','Chemical Spill':'<b style="color:#f59e0b">CHEM</b>','Other':'<b style="color:#f59e0b">OTHER</b>'
+    };
+    const LEVEL_RADIUS = {'Minimal':6,'Low':9,'Moderate':13,'High':17,'Critical':22,'Unknown':8};
+
+    const homeMap = L.map('home-disaster-map', {
+        center: [20.5937, 78.9629],
+        zoom: 5,
+        zoomControl: true,
+        scrollWheelZoom: false,  // disabled on home to avoid page-scroll hijack
+        attributionControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 18,
+    }).addTo(homeMap);
+
+    let homeMarkers = [];
+
+    function loadHomeMapData() {
+        fetch('/api/heatmap-data/?days=30')
+            .then(r => r.json())
+            .then(data => {
+                homeMarkers.forEach(m => homeMap.removeLayer(m));
+                homeMarkers = [];
+
+                const countEl = document.getElementById('home-map-count');
+                if (!data.points.length) {
+                    countEl.innerHTML = '<strong>0</strong> disasters';
+                    return;
+                }
+                countEl.innerHTML = '<strong>' + data.points.length + '</strong> disasters active';
+
+                data.points.forEach(pt => {
+                    const color  = TYPE_COLORS[pt.type] || '#6b7280';
+                    const icon   = TYPE_ICONS[pt.type] || '?';
+                    const radius = LEVEL_RADIUS[pt.level] || 8;
+
+                    const circle = L.circleMarker([pt.lat, pt.lng], {
+                        radius, color, fillColor: color,
+                        fillOpacity: 0.6, weight: 2, opacity: 0.9,
+                    });
+
+                    circle.bindPopup(L.popup({ closeButton: false, maxWidth: 200 }).setContent(
+                        '<div style="padding:0.6rem 0.8rem;min-width:150px;">' +
+                        '<div style="font-weight:700;margin-bottom:0.2rem;">' + icon + ' ' + pt.type + '</div>' +
+                        '<div style="font-size:0.75rem;color:#8b949e;margin-bottom:0.4rem;">' + pt.location + '</div>' +
+                        '<a href="' + pt.url + '" style="font-size:0.72rem;color:#e83b3b;font-weight:600;">View details →</a>' +
+                        '</div>'
+                    ));
+                    circle.on('mouseover', function() { this.openPopup(); });
+                    circle.addTo(homeMap);
+                    homeMarkers.push(circle);
+                });
+
+                if (homeMarkers.length) {
+                    homeMap.fitBounds(
+                        L.featureGroup(homeMarkers).getBounds().pad(0.15),
+                        { maxZoom: 9 }
+                    );
+                }
+            })
+            .catch(() => {
+                const el = document.getElementById('home-map-count');
+                if (el) el.textContent = 'Map unavailable';
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Animate donation progress bar
+        const fill = document.getElementById('donate-progress-fill');
+        if (fill) {
+            const pct = Math.min(parseFloat(fill.dataset.pct) || 0, 100);
+            setTimeout(() => { fill.style.width = pct + '%'; }, 300);
+        }
+
+        setTimeout(() => {
+            homeMap.invalidateSize();
+            loadHomeMapData();
+        }, 200);
+        setInterval(loadHomeMapData, 30000);
+    });
+})();
+
+// ── PWA Feature Card ──────────────────────────────────────────
+let _featPwaPrompt = null;
+
+(function initFeatPwa() {
+    const statusEl = document.getElementById('feat-pwa-status');
+    const btnEl    = document.getElementById('feat-pwa-btn');
+    const badgeEl  = document.getElementById('feat-pwa-badge');
+    const cardEl   = document.getElementById('feat-pwa');
+    if (!statusEl) return;
+
+    if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+        statusEl.textContent = 'Already Installed';
+        if (badgeEl) badgeEl.textContent = '\u2713 Installed';
+        return;
+    }
+
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        _featPwaPrompt = e;
+        statusEl.textContent = 'Available to Install';
+        if (btnEl) btnEl.style.display = 'inline-flex';
+    });
+
+    window.addEventListener('appinstalled', () => {
+        statusEl.textContent = 'Successfully Installed!';
+        if (btnEl) btnEl.style.display = 'none';
+        if (badgeEl) badgeEl.textContent = '\u2713 Installed';
+    });
+
+    setTimeout(() => {
+        if (!_featPwaPrompt && statusEl.textContent === 'Checking\u2026') {
+            const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            statusEl.textContent = isIos ? 'iOS: Use Share \u2192 Add to Home' : 'HTTPS required to install';
+        }
+    }, 3000);
+})();
+
+function featInstallPwa() {
+    if (!_featPwaPrompt) return;
+    _featPwaPrompt.prompt();
+    _featPwaPrompt.userChoice.then(r => {
+        if (r.outcome === 'accepted') localStorage.setItem('pwa_dismissed', '1');
+        _featPwaPrompt = null;
+    });
+}
+
+</script>
+{% endblock %}
