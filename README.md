@@ -114,20 +114,23 @@ disasternet/
 ├── requirements.txt
 ├── db.sqlite3
 │
-├── core/              # Project config
+├── core/              
+│   ├── asgi.py
 │   ├── settings.py
-│   ├── urls.py               # Root URL conf (includes reports.urls)
+│   ├── urls.py              
 │   └── wsgi.py
 │
-├── reports/                  # Main application
-│   ├── models.py             # All data models
-│   ├── views.py              # All view functions
-│   ├── urls.py               # App URL patterns
-│   ├── admin.py              # Django admin registration
-│   └── utils.py             # Geocoding + helper utilities
+├── reports/                  
+│   ├── models.py            
+│   ├── views.py              
+│   ├── urls.py               
+│   ├── admin.py
+│   ├── apps.py
+│   ├── tests.py      
+│   └── utils.py            
 │
 ├── templates/
-│   ├── base.html             # Global layout, navbar, footer, FABs
+│   ├── base.html            
 │   ├── home.html
 │   ├── report_disaster.html
 │   ├── report_missing.html
@@ -145,11 +148,11 @@ disasternet/
 │   └── pagination.html
 │
 ├── static/
-│   ├── manifest.json         # PWA manifest
-│   ├── sw.js                 # Service worker
-│   └── icons/                # PWA icons (icon-192.png, icon-512.png)
+│   ├── manifest.json         
+│   ├── sw.js                 
+│   └── icons/                
 │
-└── media/                    # User-uploaded photos (auto-created)
+└── media/                    
 ```
 
 ---
@@ -161,48 +164,6 @@ disasternet/
 - Python 3.10 or higher
 - pip
 
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/knight-styles/disaster-net.git
-cd disaster-net
-```
-
-### 2. Create a Virtual Environment
-
-```bash
-python -m venv venv
-source venv/bin/activate        # Linux / macOS
-venv\Scripts\activate           # Windows
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Apply Migrations
-
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-### 5. Create a Superuser (Admin)
-
-```bash
-python manage.py createsuperuser
-```
-
-### 6. Run the Development Server
-
-```bash
-python manage.py runserver
-```
-
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser.
-
 ---
 
 ## Configuration
@@ -212,8 +173,8 @@ All configuration is in `disasternet/settings.py`.
 | Setting | Default | Description |
 |---|---|---|
 | `DEBUG` | `True` | Set to `False` in production |
-| `SECRET_KEY` | Dev key | **Change this in production** |
-| `DATABASES` | SQLite | Switch to PostgreSQL for production |
+| `SECRET_KEY` | Dev key |
+| `DATABASES` | SQLite |
 | `MEDIA_ROOT` | `media/` | Uploaded files directory |
 | `STATIC_ROOT` | `staticfiles/` | Collected static files |
 | `LOGIN_URL` | `/auth/login/` | Redirect for unauthenticated access |
@@ -230,17 +191,6 @@ from django.conf.urls.static import static
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 ```
-
-### Production Deployment
-
-Uncomment the relevant packages in `requirements.txt`:
-
-```
-whitenoise>=6.6.0       # Static file serving
-psycopg2-binary>=2.9.9  # PostgreSQL adapter
-python-decouple>=3.8    # Environment variables
-```
-
 ---
 
 ## URL Reference
@@ -423,9 +373,9 @@ Built as a college project by:
 
 | Name | Role |
 |---|---|
-| **Mohd Sharib** | Full Stack Development |
-| **Sephali Chandrakar** | UI / UX Design |
-| **Antaryami Swain** | Backend & Database |
+| **Mohd Sharib** |
+| **Sephali Chandrakar** |
+| **Antaryami Swain** |
 
 ---
 
