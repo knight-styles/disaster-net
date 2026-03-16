@@ -1,4 +1,4 @@
-# 🚨 DisasterNet
+# 🔴 DisasterNet
 
 > **Crowd-Source Disaster Management Platform**  
 > Real-time disaster reporting, missing persons tracking, injured persons management, and emergency coordination — built with Django.
@@ -17,7 +17,6 @@
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
-- [Configuration](#configuration)
 - [URL Reference](#url-reference)
 - [Models](#models)
 - [API Endpoints](#api-endpoints)
